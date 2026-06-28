@@ -1,0 +1,83 @@
+{% extends "base_hr.html" %}
+{% block title %}Screening Results{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <a href="{{ url_for('hr_jobs') }}" class="btn btn-outline btn-sm">&larr; Back</a>
+            <div class="page-title">Screening Results — {{ job.title }}</div>
+        </div>
+        <div class="page-sub">{{ job.company }} · {{ applications | length }} resume{{ 's' if applications | length != 1 }} screened · 3 NLP techniques applied</div>
+    </div>
+    <div class="header-actions">
+        <span class="stat-badge badge-blue">{{ applications | length }} Applicant{{ 's' if applications | length != 1 }}</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px;">Rank</th>
+                    <th>Candidate</th>
+                    <th>Composite Score</th>
+                    <th>Keyword</th>
+                    <th>Fuzzy</th>
+                    <th>Text Similarity</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td>
+                        <div class="rank-num rank-{{ loop.index }}">#{{ loop.index }}</div>
+                    </td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="cand-avatar" style="background:#3b5bdb;">{{ app.applicant.name[:2].upper() }}</div>
+                            <div>
+                                <div class="fw-700">{{ app.applicant.name }}</div>
+                                <div class="text-muted text-sm">{{ app.applicant.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if app.composite_score >= 80 %}
+                        <span class="score-pill pill-green">{{ app.composite_score }}%</span>
+                        {% elif app.composite_score >= 60 %}
+                        <span class="score-pill pill-orange">{{ app.composite_score }}%</span>
+                        {% else %}
+                        <span class="score-pill pill-red">{{ app.composite_score }}%</span>
+                        {% endif %}
+                    </td>
+                    <td class="fw-700">{{ app.keyword_score }}%</td>
+                    <td class="fw-700">{{ app.fuzzy_score }}%</td>
+                    <td class="fw-700">{{ app.similarity_score }}%</td>
+                    <td>
+                        <span class="status status-{{ app.status }}">{{ app.status | capitalize }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">
+                        No applications yet for this job posting.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:20px;font-size:11px;color:var(--text-muted);">
+        <span><strong>KW</strong> = Keyword Matching (40%)</span>
+        <span><strong>FZ</strong> = Fuzzy Matching (30%)</span>
+        <span><strong>TS</strong> = Text Similarity TF-IDF (30%)</span>
+        <span style="margin-left:auto;">
+            <span style="color:var(--green);">&#9679;</span> &ge;80% Recommended &nbsp;
+            <span style="color:var(--orange);">&#9679;</span> 60–79% In Review &nbsp;
+            <span style="color:var(--red);">&#9679;</span> &lt;60% Not Recommended
+        </span>
+    </div>
+</div>
+{% endblock %}

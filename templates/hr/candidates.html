@@ -1,0 +1,38 @@
+{% extends "base_hr.html" %}
+{% block title %}Candidates{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><div class="page-title">All Candidates</div><div class="page-sub">{{ applications | length }} applicant{{ 's' if applications | length != 1 }} across all job postings</div></div>
+</div>
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Candidate</th><th>Applied For</th><th>Applied On</th><th>Composite Score</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="cand-avatar" style="background:var(--blue);">{{ app.applicant.name[:2].upper() }}</div>
+                            <div><div class="fw-700">{{ app.applicant.name }}</div><div class="text-muted text-sm">{{ app.applicant.email }}</div></div>
+                        </div>
+                    </td>
+                    <td>{{ app.job.title }}</td>
+                    <td class="text-muted text-sm">{{ app.applied_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        {% if app.composite_score >= 80 %}<span class="score-pill pill-green">{{ app.composite_score }}%</span>
+                        {% elif app.composite_score >= 60 %}<span class="score-pill pill-orange">{{ app.composite_score }}%</span>
+                        {% else %}<span class="score-pill pill-red">{{ app.composite_score }}%</span>{% endif %}
+                    </td>
+                    <td><span class="status status-{{ app.status }}">{{ app.status | capitalize }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No candidates yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

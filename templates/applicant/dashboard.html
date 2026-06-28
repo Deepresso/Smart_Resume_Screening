@@ -1,0 +1,68 @@
+{% extends "base_applicant.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-title">Find Your Next Opportunity</div>
+        <div class="page-sub">Hello, {{ current_user.name }}! You have {{ applications | length }} active application{{ 's' if applications | length != 1 }}.</div>
+    </div>
+    <a href="{{ url_for('applicant_jobs') }}" class="btn btn-primary">Browse All Jobs</a>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+    <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Available Positions</div>
+        {% if jobs %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            {% for job in jobs %}
+            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
+                <div class="job-card-header">
+                    <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">{{ job.title[:2].upper() }}</span>
+                    <span class="status status-active" style="font-size:10px;">Active</span>
+                </div>
+                <div class="job-title">{{ job.title }}</div>
+                <div class="job-meta">{{ job.company }} &middot; {{ job.location }}</div>
+                {% if job.keywords %}
+                <div class="job-tags">
+                    {% for kw in job.keywords.split(',')[:3] %}
+                    <span class="skill-tag">{{ kw.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:40px;color:var(--text-muted);">
+                No active job postings right now. Check back soon.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">My Applications</div>
+                <a href="{{ url_for('applicant_applications') }}" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            <div class="card-body" style="padding-top:8px;">
+                {% for app in applications %}
+                <div class="app-card" style="margin-bottom:10px;">
+                    <div class="app-card-tag" style="background:#ffedd5;color:#c2410c;">{{ app.job.title[:2].upper() }}</div>
+                    <div style="flex:1;">
+                        <div class="fw-700" style="font-size:13px;">{{ app.job.title }}</div>
+                        <div class="text-muted text-sm">{{ app.status | capitalize }} &middot; Score: {{ app.composite_score }}%</div>
+                    </div>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">
+                    No applications yet. <a href="{{ url_for('applicant_jobs') }}" style="color:var(--blue);">Apply now</a>.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

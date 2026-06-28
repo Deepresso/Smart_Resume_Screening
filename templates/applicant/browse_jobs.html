@@ -1,0 +1,36 @@
+{% extends "base_applicant.html" %}
+{% block title %}Browse Jobs{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><div class="page-title">Browse Jobs</div><div class="page-sub">{{ jobs | length }} active position{{ 's' if jobs | length != 1 }}</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    {% for job in jobs %}
+    <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
+        <div class="job-card-header">
+            <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">
+                {{ job.title[:2].upper() }}
+            </span>
+            <span class="status status-active" style="font-size:10px;">Active</span>
+        </div>
+        <div class="job-title">{{ job.title }}</div>
+        <div class="job-meta">{{ job.company }} &middot; {{ job.location }}</div>
+        {% if job.keywords %}
+        <div class="job-tags">
+            {% for kw in job.keywords.split(',')[:3] %}
+            <span class="skill-tag">{{ kw.strip() }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);">
+            Posted {{ job.created_at.strftime('%d %b %Y') }}
+        </div>
+    </a>
+    {% else %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);">
+        No active job postings at the moment. Check back soon.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base_hr.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-title">Dashboard Overview</div>
+        <div class="page-sub">Welcome back, {{ current_user.name }}. Here's what's happening today.</div>
+    </div>
+    <a href="{{ url_for('hr_new_job') }}" class="btn btn-primary">+ New Job Posting</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon blue">&#x1F4CB;</div>
+        <div>
+            <div class="stat-value">{{ jobs | length }}</div>
+            <div class="stat-label">Job Postings</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple">&#x1F465;</div>
+        <div>
+            <div class="stat-value">{{ total_apps }}</div>
+            <div class="stat-label">Total Applicants</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">&#x2713;</div>
+        <div>
+            <div class="stat-value">{{ shortlisted }}</div>
+            <div class="stat-label">Shortlisted</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">&#x23F3;</div>
+        <div>
+            <div class="stat-value">{{ pending }}</div>
+            <div class="stat-label">Awaiting Review</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Job Postings -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Job Postings</div>
+            <a href="{{ url_for('hr_jobs') }}" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Applicants</th>
+                        <th>Status</th>
+                        <th>Posted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs[:5] %}
+                    <tr>
+                        <td>
+                            <div class="fw-700">{{ job.title }}</div>
+                            <div class="text-muted text-sm">{{ job.company }}</div>
+                        </td>
+                        <td>{{ job.applications | length }}</td>
+                        <td><span class="status status-{{ 'active' if job.is_active else 'closed' }}">{{ 'Active' if job.is_active else 'Closed' }}</span></td>
+                        <td class="text-muted text-sm">{{ job.created_at.strftime('%d %b %Y') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted);">
+                            No job postings yet. <a href="{{ url_for('hr_new_job') }}" style="color:var(--blue);">Create one</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Ranked Applicants -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Top Ranked Applicants</div>
+        </div>
+        <div class="card-body">
+            {% for app in top_apps %}
+            <div class="candidate-row">
+                <div class="cand-avatar" style="background:#3b5bdb;">{{ app.applicant.name[:2].upper() }}</div>
+                <div>
+                    <div class="cand-name">{{ app.applicant.name }}</div>
+                    <div class="cand-email">{{ app.job.title }}</div>
+                </div>
+                <div style="margin-left:auto;text-align:right;">
+                    <div class="cand-score">{{ app.composite_score }}%</div>
+                    <span class="status status-{{ app.status }}" style="font-size:10px;">{{ app.status | capitalize }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:30px;color:var(--text-muted);">
+                No applications yet. Share your job postings to get started.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

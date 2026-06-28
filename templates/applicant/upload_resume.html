@@ -1,0 +1,27 @@
+{% extends "base_applicant.html" %}
+{% block title %}Upload Resume{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><div class="page-title">Upload Resume</div><div class="page-sub">Upload your latest resume to apply for jobs faster</div></div>
+</div>
+<div style="max-width:600px;margin:0 auto;">
+    <div class="card">
+        <div class="card-body">
+            <div class="upload-box" style="margin-bottom:20px;">
+                <div class="upload-icon">&#x1F4E4;</div>
+                <div class="upload-title">Drag &amp; drop your resume here</div>
+                <div class="upload-sub">or <span style="color:var(--blue);font-weight:600;cursor:pointer;">browse to upload</span><br>Supports PDF, DOCX · Max 10MB</div>
+            </div>
+            <div style="background:var(--green-bg);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <span style="font-size:24px;">&#x1F4C4;</span>
+                <div>
+                    <div class="fw-700" style="font-size:13px;">TanWeiJian_Resume.pdf</div>
+                    <div class="text-muted text-sm">245 KB · Last updated 13 Apr 2026 &#x2713;</div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="margin-left:auto;">Replace</button>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="window.location.href='{{ url_for('applicant_dashboard') }}'">Save Resume</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

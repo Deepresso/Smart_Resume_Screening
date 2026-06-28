@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartResume{% endblock %} — HR Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">&#x1F4CB;</div>
+            <div>
+                <div class="sidebar-brand-name">SmartResume</div>
+                <div class="sidebar-brand-sub">HR Portal</div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">Main</div>
+            <a href="{{ url_for('hr_dashboard') }}" class="nav-item {% if request.endpoint == 'hr_dashboard' %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F4CA;</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('hr_jobs') }}" class="nav-item {% if request.endpoint in ['hr_jobs','hr_new_job'] %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F4CB;</span>
+                <span>Job Postings</span>
+            </a>
+            <a href="{{ url_for('hr_candidates') }}" class="nav-item {% if request.endpoint == 'hr_candidates' %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F465;</span>
+                <span>Candidates</span>
+            </a>
+            <a href="{{ url_for('hr_screening_results', job_id=1) }}" class="nav-item {% if request.endpoint == 'hr_screening_results' %}active{% endif %}">
+                <span class="nav-item-icon">&#x2728;</span>
+                <span>Screening Results</span>
+            </a>
+            <div class="sidebar-section">Management</div>
+            <a href="{{ url_for('hr_settings') }}" class="nav-item {% if request.endpoint == 'hr_settings' %}active{% endif %}">
+                <span class="nav-item-icon">&#x2699;&#xFE0F;</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item" style="margin-top:4px;">
+                <span class="nav-item-icon">&#x1F6AA;</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ current_user.name[:2].upper() }}</div>
+            <div>
+                <div class="user-name">{{ current_user.name }}</div>
+                <div class="user-role">HR Manager</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

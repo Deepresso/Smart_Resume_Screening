@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+instance/
+uploads/
+
+.env
+.venv/
+venv/
+
+.claude/
+.codex/
+
+*.log
+Agent tool input*.txt

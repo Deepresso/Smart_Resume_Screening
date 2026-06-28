@@ -1,0 +1,110 @@
+{% extends "base_hr.html" %}
+{% block title %}Candidate Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('hr_screening_results', job_id=1) }}" class="btn btn-outline btn-sm">&larr; Applicant Profile — Tan Wei Jian</a>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-outline">Download Resume</button>
+        <button class="btn btn-success">&#x2713; Shortlist Candidate</button>
+    </div>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+    <!-- Left: Resume Preview -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Resume Preview</div>
+            <span class="stat-badge badge-blue">PDF · Uploaded 13 Apr 2026</span>
+        </div>
+        <div class="card-body">
+            <div class="resume-preview">
+                <div class="resume-name">Tan Wei Jian</div>
+                <div class="resume-contact">tanweijian@email.com · +60 12-345 6789 · Penang, Malaysia · linkedin.com/in/tanweijian</div>
+
+                <div class="resume-section-title">Professional Summary</div>
+                <p>Final year Software Engineering student with hands-on experience in Python, Flask and machine learning. Passionate about building scalable web applications and intelligent systems. Strong background in NLP and data processing pipelines.</p>
+
+                <div class="resume-section-title">Technical Skills</div>
+                <div class="kw-container" style="gap:6px;">
+                    <span class="skill-tag">Python</span><span class="skill-tag">Flask</span><span class="skill-tag">NLP</span>
+                    <span class="skill-tag">Machine Learning</span><span class="skill-tag">MySQL</span><span class="skill-tag">HTML/CSS</span>
+                    <span class="skill-tag">JavaScript</span><span class="skill-tag">TF-IDF</span><span class="skill-tag">scikit-learn</span><span class="skill-tag">Git</span>
+                </div>
+
+                <div class="resume-section-title">Education</div>
+                <p><strong>Bachelor in Software Engineering (Hons)</strong><br>
+                UOW Malaysia KDU Penang University College · Jan 2023 – Present · CGPA 3.7</p>
+
+                <div class="resume-section-title">Experience</div>
+                <p><strong>Software Developer Intern</strong> · TechCorp Sdn Bhd<br>
+                Jun 2025 – Sep 2025 · Developed REST APIs using Flask and Python. Implemented data pipelines for real-time analytics dashboards.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Score + Info -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Candidate Info -->
+        <div class="card">
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+                    <div class="cand-avatar" style="background:#3b5bdb;width:48px;height:48px;font-size:16px;">TW</div>
+                    <div>
+                        <div style="font-size:16px;font-weight:800;">Tan Wei Jian</div>
+                        <div class="text-muted text-sm">tanweijian@email.com</div>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied For</span><strong>Software Engineer</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied On</span><strong>13 Apr 2026</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Rank</span><strong>#1 of 84</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Status</span><span class="status status-shortlisted">Shortlisted</span></div>
+                </div>
+                <div class="divider"></div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-success" style="flex:1;">&#x2713; Shortlist</button>
+                    <button class="btn btn-danger" style="flex:1;">&#x2715; Reject</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score Breakdown -->
+        <div class="card">
+            <div class="card-header"><div class="card-title">Screening Score Breakdown</div></div>
+            <div class="card-body">
+                <div style="text-align:center;margin-bottom:20px;">
+                    <div class="score-big">91.4%</div>
+                    <div class="score-label">Composite Relevance Score</div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-name"><span class="score-dot" style="background:#3b5bdb;"></span>Keyword Matching</div>
+                    <div class="score-pct" style="color:#3b5bdb;">88%</div>
+                </div>
+                <div class="progress" style="margin-bottom:14px;">
+                    <div class="progress-fill fill-blue" style="width:88%;"></div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching</div>
+                    <div class="score-pct" style="color:#7c3aed;">92%</div>
+                </div>
+                <div class="progress" style="margin-bottom:14px;">
+                    <div class="progress-fill" style="width:92%;background:#7c3aed;"></div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (TF-IDF)</div>
+                    <div class="score-pct" style="color:var(--green);">94%</div>
+                </div>
+                <div class="progress">
+                    <div class="progress-fill fill-green" style="width:94%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartResume{% endblock %} — Applicant Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="app-wrapper">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">&#x1F4CB;</div>
+            <div>
+                <div class="sidebar-brand-name">SmartResume</div>
+                <div class="sidebar-brand-sub">Applicant Portal</div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">Navigation</div>
+            <a href="{{ url_for('applicant_dashboard') }}" class="nav-item {% if request.endpoint == 'applicant_dashboard' %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F3E0;</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('applicant_jobs') }}" class="nav-item {% if request.endpoint in ['applicant_jobs','applicant_apply'] %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F50D;</span>
+                <span>Browse Jobs</span>
+            </a>
+<a href="{{ url_for('applicant_applications') }}" class="nav-item {% if request.endpoint in ['applicant_applications','applicant_application_detail'] %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F4C4;</span>
+                <span>My Applications</span>
+            </a>
+            <a href="{{ url_for('applicant_settings') }}" class="nav-item {% if request.endpoint == 'applicant_settings' %}active{% endif %}">
+                <span class="nav-item-icon">&#x2699;&#xFE0F;</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item" style="margin-top:4px;">
+                <span class="nav-item-icon">&#x1F6AA;</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+        <div class="sidebar-user">
+            <div class="user-avatar" style="background:#7c3aed;">{{ current_user.name[:2].upper() }}</div>
+            <div>
+                <div class="user-name">{{ current_user.name }}</div>
+                <div class="user-role">Job Applicant</div>
+            </div>
+        </div>
+    </aside>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

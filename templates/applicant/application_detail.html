@@ -1,0 +1,86 @@
+{% extends "base_applicant.html" %}
+{% block title %}Match Score & Feedback{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('applicant_applications') }}" class="btn btn-outline btn-sm">&larr; Match Score &amp; Feedback — Software Engineer</a>
+    <span class="status status-shortlisted">Shortlisted</span>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-size:16px;font-weight:800;margin-bottom:2px;">Your Resume Match Score</div>
+                <div class="text-muted text-sm">Software Engineer · Tech Solutions Sdn Bhd · Screened on 14 Apr 2026</div>
+                <div style="margin-top:10px;background:var(--green-bg);border-radius:8px;padding:8px 14px;display:inline-block;">
+                    <span style="font-size:13px;color:var(--green);font-weight:600;">&#x1F3C6; Congratulations! You have been <strong>shortlisted</strong> for this position. Your resume ranked <strong>#1 out of 84</strong> applicants.</span>
+                </div>
+            </div>
+            <div style="text-align:center;">
+                <div class="score-big">91.4%</div>
+                <div class="score-label">Match Score</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Breakdown -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+    <div class="card">
+        <div class="card-body" style="text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">&#x1F50D;</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Keyword Matching</div>
+            <div style="font-size:32px;font-weight:900;color:var(--blue);">88%</div>
+            <div class="progress" style="margin:10px 0;">
+                <div class="progress-fill fill-blue" style="width:88%;"></div>
+            </div>
+            <div class="text-muted text-sm">8 out of 10 required keywords were found in your resume.</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body" style="text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">&#x270F;&#xFE0F;</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Fuzzy Matching</div>
+            <div style="font-size:32px;font-weight:900;color:#7c3aed;">92%</div>
+            <div class="progress" style="margin:10px 0;">
+                <div class="progress-fill" style="width:92%;background:#7c3aed;"></div>
+            </div>
+            <div class="text-muted text-sm">High tolerance for spelling variations detected. Strong match.</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body" style="text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">&#x2728;</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Text Similarity (TF-IDF)</div>
+            <div style="font-size:32px;font-weight:900;color:var(--green);">94%</div>
+            <div class="progress" style="margin:10px 0;">
+                <div class="progress-fill fill-green" style="width:94%;"></div>
+            </div>
+            <div class="text-muted text-sm">Excellent thematic alignment between your resume and the job description.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Feedback -->
+<div class="card">
+    <div class="card-header"><div class="card-title">Detailed Feedback</div></div>
+    <div class="card-body">
+        <div class="feedback-item">
+            <div class="feedback-icon">&#x2705;</div>
+            <div class="feedback-text"><strong>Matched Keywords:</strong> Python, Flask, NLP, MySQL, Machine Learning, HTML/CSS, JavaScript, REST API were found in your resume.</div>
+        </div>
+        <div class="feedback-item">
+            <div class="feedback-icon">&#x26A0;&#xFE0F;</div>
+            <div class="feedback-text"><strong>Missing Keywords:</strong> "Docker" and "CI/CD" were listed in the job description but not found in your resume. Consider adding these if applicable.</div>
+        </div>
+        <div class="feedback-item">
+            <div class="feedback-icon">&#x1F4A1;</div>
+            <div class="feedback-text"><strong>Fuzzy Matches:</strong> "scikit-learn" was matched to "ML library" and "TF-IDF" was matched to "text vectorisation" through fuzzy matching.</div>
+        </div>
+        <div class="feedback-item">
+            <div class="feedback-icon">&#x1F4C8;</div>
+            <div class="feedback-text"><strong>Tip:</strong> Your overall thematic alignment is excellent. To further improve, include more specific industry terms like "REST API", "unit testing" and "agile methodology".</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

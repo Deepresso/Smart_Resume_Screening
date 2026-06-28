@@ -1,0 +1,68 @@
+{% extends "base_applicant.html" %}
+{% block title %}Apply &mdash; {{ job.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('applicant_jobs') }}" class="btn btn-outline btn-sm">&larr; Back to Jobs</a>
+    <span class="status status-active">Position Open</span>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="background:#fee2e2;color:#b91c1c;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">
+    {{ messages[0] }}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="grid-2" style="align-items:start;">
+    <div class="card">
+        <div class="card-body">
+            <div class="text-muted text-sm" style="margin-bottom:4px;">{{ job.company }} &middot; {{ job.location }}</div>
+            <div style="font-size:22px;font-weight:800;margin-bottom:16px;">{{ job.title }}</div>
+
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;">Job Description</div>
+            <p style="font-size:13px;line-height:1.7;margin-bottom:16px;">{{ job.description }}</p>
+
+            {% if job.keywords %}
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;">Screening Keywords</div>
+            <div class="kw-container">
+                {% for kw in job.keywords.split(',') %}
+                <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;">{{ kw.strip() }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><div class="card-title">Submit Your Application</div></div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('applicant_apply', job_id=job.id) }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Cover Letter (Optional)</label>
+                    <textarea name="cover_letter" rows="4" placeholder="Tell us why you're a great fit for this role..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Upload Resume *</label>
+                    <div class="upload-box" style="padding:20px;cursor:pointer;" onclick="document.getElementById('resumeInput').click()">
+                        <div class="upload-icon">&#x1F4E4;</div>
+                        <div class="upload-title" id="uploadLabel">Click to select your resume</div>
+                        <div class="upload-sub">Supports PDF, DOCX &middot; Max 10MB</div>
+                        <input type="file" name="resume" id="resumeInput" accept=".pdf,.docx" style="display:none;" onchange="showFilename(this)">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Submit Application</button>
+                <p class="form-hint" style="text-align:center;margin-top:10px;">Your resume will be automatically screened after submission.</p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFilename(input) {
+    if (input.files.length > 0) {
+        document.getElementById('uploadLabel').textContent = input.files[0].name;
+    }
+}
+</script>
+{% endblock %}

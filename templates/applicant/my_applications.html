@@ -1,0 +1,57 @@
+{% extends "base_applicant.html" %}
+{% block title %}My Applications{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><div class="page-title">My Applications</div><div class="page-sub">{{ applications | length }} application{{ 's' if applications | length != 1 }} submitted</div></div>
+</div>
+
+{% if applications %}
+<div style="display:flex;flex-direction:column;gap:12px;">
+    {% for app in applications %}
+    <div class="card">
+        <div class="card-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <!-- Job info -->
+            <div style="flex:1;min-width:200px;">
+                <div class="fw-700" style="font-size:15px;">{{ app.job.title }}</div>
+                <div class="text-muted text-sm">{{ app.job.company }} · Applied {{ app.applied_at.strftime('%d %b %Y') }}</div>
+                <span class="status status-{{ app.status }}" style="margin-top:6px;display:inline-block;">{{ app.status | capitalize }}</span>
+            </div>
+
+            <!-- Score breakdown -->
+            <div style="display:flex;gap:16px;align-items:center;">
+                <div style="text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Keyword</div>
+                    <div class="fw-700" style="font-size:16px;color:var(--blue);">{{ app.keyword_score }}%</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Fuzzy</div>
+                    <div class="fw-700" style="font-size:16px;color:#7c3aed;">{{ app.fuzzy_score }}%</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Similarity</div>
+                    <div class="fw-700" style="font-size:16px;color:var(--green);">{{ app.similarity_score }}%</div>
+                </div>
+                <div style="text-align:center;border-left:2px solid var(--border);padding-left:16px;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Match Score</div>
+                    {% if app.composite_score >= 80 %}
+                    <div class="score-big" style="font-size:28px;color:var(--green);">{{ app.composite_score }}%</div>
+                    {% elif app.composite_score >= 60 %}
+                    <div class="score-big" style="font-size:28px;color:var(--orange);">{{ app.composite_score }}%</div>
+                    {% else %}
+                    <div class="score-big" style="font-size:28px;color:var(--red);">{{ app.composite_score }}%</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body" style="text-align:center;padding:60px;color:var(--text-muted);">
+        You haven't applied for any jobs yet.<br><br>
+        <a href="{{ url_for('applicant_jobs') }}" class="btn btn-primary">Browse Jobs</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

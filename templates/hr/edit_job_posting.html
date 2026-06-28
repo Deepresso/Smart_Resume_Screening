@@ -1,0 +1,148 @@
+{% extends "base_hr.html" %}
+{% block title %}Edit Job Posting{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('hr_jobs') }}" class="btn btn-outline btn-sm">&larr; Back</a>
+        <div><div class="page-title">Edit Job Posting</div></div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="background:#fee2e2;color:#b91c1c;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">
+    {{ messages[0] }}
+</div>
+{% endif %}
+{% endwith %}
+
+<form method="POST" action="{{ url_for('hr_edit_job', job_id=job.id) }}" id="jobForm" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();}">
+    <input type="hidden" name="keywords" id="keywordsHidden">
+
+    <div class="grid-2" style="align-items:start;">
+        <div>
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><div class="card-title">&#x1F4C4; Job Information</div></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" name="title" id="previewTitle" value="{{ job.title }}" required oninput="updatePreview()">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Company Name *</label>
+                            <input type="text" name="company" id="previewCompany" value="{{ job.company }}" required oninput="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" name="location" id="previewLocation" value="{{ job.location }}" oninput="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Job Description *</label>
+                        <textarea name="description" rows="5" required>{{ job.description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><div class="card-title">&#x1F50D; Screening Keywords</div></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Screening Keywords</label>
+                        <div class="kw-container" id="kwContainer">
+                            <input class="kw-input" id="kwInput" placeholder="Type a keyword and press Enter..." onkeydown="addKw(event)">
+                        </div>
+                        <p class="form-hint">Add 6-12 keywords for best NLP screening accuracy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:16px;">
+                <a href="{{ url_for('hr_jobs') }}" class="btn btn-outline">&larr; Cancel</a>
+                <button type="button" class="btn btn-primary" onclick="submitJob()">Save Changes &#x2192;</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="card" style="position:sticky;top:20px;">
+                <div class="card-header">
+                    <div class="card-title">Preview</div>
+                </div>
+                <div class="card-body">
+                    <div class="text-muted text-sm" id="previewMeta">{{ job.company }} &middot; {{ job.location }}</div>
+                    <div style="font-size:18px;font-weight:800;margin:4px 0 10px;" id="previewTitleDisplay">{{ job.title }}</div>
+                    <div class="divider"></div>
+                    <div style="font-size:12px;font-weight:700;margin-bottom:8px;">SCREENING KEYWORDS</div>
+                    <div class="kw-container" id="previewKw">
+                        <span style="color:var(--text-muted);font-size:12px;">No keywords added yet</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+var existingKeywords = {{ job.keywords | tojson if job.keywords else '""' }};
+
+function getKeywords() {
+    return Array.from(document.querySelectorAll('#kwContainer .kw-tag')).map(t => t.dataset.kw);
+}
+
+function addTagToContainer(kw) {
+    var tag = document.createElement('span');
+    tag.className = 'kw-tag';
+    tag.dataset.kw = kw;
+    tag.innerHTML = kw + ' <span class="kw-remove" onclick="removeKw(this)">&#x2715;</span>';
+    document.getElementById('kwContainer').insertBefore(tag, document.getElementById('kwInput'));
+}
+
+function updatePreview() {
+    var title   = document.getElementById('previewTitle').value || 'Job Title';
+    var company = document.getElementById('previewCompany').value || 'Company';
+    var loc     = document.getElementById('previewLocation').value || 'Location';
+    document.getElementById('previewTitleDisplay').textContent = title;
+    document.getElementById('previewMeta').textContent = company + ' · ' + loc;
+
+    var kws = getKeywords();
+    var previewKw = document.getElementById('previewKw');
+    if (kws.length === 0) {
+        previewKw.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">No keywords added yet</span>';
+    } else {
+        previewKw.innerHTML = kws.map(k =>
+            '<span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;">' + k + '</span>'
+        ).join('');
+    }
+}
+
+function addKw(e) {
+    if (e.key !== 'Enter' && e.keyCode !== 13) return;
+    e.preventDefault();
+    var val = document.getElementById('kwInput').value.trim();
+    if (!val) return;
+    addTagToContainer(val);
+    document.getElementById('kwInput').value = '';
+    updatePreview();
+}
+
+function removeKw(el) {
+    el.parentElement.remove();
+    updatePreview();
+}
+
+function submitJob() {
+    document.getElementById('keywordsHidden').value = getKeywords().join(',');
+    document.getElementById('jobForm').submit();
+}
+
+// Load existing keywords on page load
+if (existingKeywords) {
+    existingKeywords.split(',').forEach(function(kw) {
+        kw = kw.trim();
+        if (kw) addTagToContainer(kw);
+    });
+    updatePreview();
+}
+</script>
+{% endblock %}

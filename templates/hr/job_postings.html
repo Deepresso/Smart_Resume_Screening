@@ -1,0 +1,76 @@
+{% extends "base_hr.html" %}
+{% block title %}Job Postings{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-title">Manage Job Postings</div>
+        <div class="page-sub">Create and manage your job vacancies</div>
+    </div>
+    <a href="{{ url_for('hr_new_job') }}" class="btn btn-primary">+ New Job Posting</a>
+</div>
+
+<div class="stats-row" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-icon green">&#x2713;</div>
+        <div><div class="stat-value">{{ active_count }}</div><div class="stat-label">Active Postings</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">&#x1F6AB;</div>
+        <div><div class="stat-value">{{ closed_count }}</div><div class="stat-label">Closed Postings</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple">&#x1F4CB;</div>
+        <div><div class="stat-value">{{ jobs | length }}</div><div class="stat-label">Total Postings</div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">All Job Postings</div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Position</th>
+                    <th>Applicants</th>
+                    <th>Status</th>
+                    <th>Posted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div class="fw-700">{{ job.title }}</div>
+                        <div class="text-muted text-sm">{{ job.company }}</div>
+                    </td>
+                    <td>{{ job.applications | length }}</td>
+                    <td><span class="status status-{{ 'active' if job.is_active else 'closed' }}">{{ 'Active' if job.is_active else 'Closed' }}</span></td>
+                    <td class="text-muted text-sm">{{ job.created_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        <div style="display:flex;gap:8px;">
+                            <a href="{{ url_for('hr_screening_results', job_id=job.id) }}" class="btn btn-outline btn-sm">Results</a>
+                            <a href="{{ url_for('hr_edit_job', job_id=job.id) }}" class="btn btn-outline btn-sm">Edit</a>
+                            <form method="POST" action="{{ url_for('hr_toggle_job', job_id=job.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-outline btn-sm">{{ 'Reopen' if not job.is_active else 'Close' }}</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('hr_delete_job', job_id=job.id) }}" style="display:inline;" onsubmit="return confirm('Delete this job posting?')">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">
+                        No job postings yet. <a href="{{ url_for('hr_new_job') }}" style="color:var(--blue);">Create your first one</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
