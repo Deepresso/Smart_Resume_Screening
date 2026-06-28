@@ -146,6 +146,8 @@ def register():
             flash('Passwords do not match.')
         elif User.query.filter_by(email=email).first():
             flash('An account with this email already exists.')
+        elif User.query.filter_by(phone=phone).first():
+            flash('An account with this phone number already exists.')
         else:
             code   = str(random.randint(1000, 9999))
             hashed = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -156,7 +158,8 @@ def register():
             db.session.commit()
             try:
                 msg = Message('Your SmartResume Verification Code',
-                              sender=app.config['MAIL_USERNAME'], recipients=[email])
+                              sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[email])
+                msg.body = f'Hi {first_name},\n\nYour SmartResume verification code is: {code}\n\nEnter this code when you log in to activate your account.\n\nSmartResume - UOW Malaysia KDU'
                 msg.html = f"""
                 <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
                     <h2 style="color:#1e293b;">Verify your account</h2>
@@ -165,15 +168,22 @@ def register():
                     <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
                         <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
                     </div>
-                    <p>Enter this code on the verification page to activate your account.</p>
+                    <p>Enter this code on the verification page when you log in to activate your account.</p>
                     <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
                 </div>"""
                 mail.send(msg)
-            except Exception:
-                flash('Account created but we could not send the verification email. Use Resend Code.')
-            session['pending_verify_id'] = user.id
-            return redirect(url_for('verify'))
+            except Exception as e:
+                app.logger.error(f'Mail send failed: {e}')
+            session['registered_email'] = email
+            return redirect(url_for('register_success'))
     return render_template('auth/register.html')
+
+@app.route('/register/success')
+def register_success():
+    email = session.pop('registered_email', None)
+    if not email:
+        return redirect(url_for('register'))
+    return render_template('auth/register_success.html', email=email)
 
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
@@ -388,6 +398,46 @@ def hr_candidate_detail(candidate_id):
 def hr_candidates():
     applications = Application.query.join(JobPosting).filter(JobPosting.created_by == current_user.id).order_by(Application.composite_score.desc()).all()
     return render_template('hr/candidates.html', applications=applications)
+
+@app.route('/hr/users')
+@login_required
+@hr_required
+def hr_user_management():
+    users = User.query.order_by(User.role, User.id).all()
+    return render_template('hr/user_management.html', users=users)
+
+@app.route('/hr/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@hr_required
+def hr_edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        user.name        = request.form.get('name', '').strip() or user.name
+        user.email       = request.form.get('email', '').strip() or user.email
+        user.phone       = request.form.get('phone', '').strip()
+        user.address1    = request.form.get('address1', '').strip()
+        user.address2    = request.form.get('address2', '').strip()
+        user.postcode    = request.form.get('postcode', '').strip()
+        user.state       = request.form.get('state', '').strip()
+        user.is_verified = request.form.get('is_verified') == '1'
+        db.session.commit()
+        flash('User updated successfully.')
+        return redirect(url_for('hr_user_management'))
+    return render_template('hr/edit_user.html', user=user)
+
+@app.route('/hr/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@hr_required
+def hr_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.role == 'hr':
+        flash('HR accounts cannot be deleted.')
+        return redirect(url_for('hr_user_management'))
+    Application.query.filter_by(user_id=user_id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted.')
+    return redirect(url_for('hr_user_management'))
 
 @app.route('/hr/settings', methods=['GET', 'POST'])
 @login_required

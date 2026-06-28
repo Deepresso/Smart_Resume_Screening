@@ -542,6 +542,25 @@ New profile fields added to users table:
   - is_verified BOOLEAN       Whether email has been verified
   - verify_code VARCHAR(6)    Temporary 4-digit verification code
 
+Registration success flow:
+  - After successful registration, user is redirected to /register/success
+  - A clean success page shows a popup-style card: "Verification Email Sent!"
+  - User clicks "OK, Go to Sign In" to go to the login page
+  - On login with unverified account: redirected to /verify page to enter code
+  - This separates registration from verification (cleaner UX)
+
+Duplicate checks on registration:
+  - Duplicate email: blocked with flash message
+  - Duplicate phone number: blocked with flash message
+
+HR User Management (admin panel):
+  - Route: /hr/users — list all users (HR and applicants)
+  - Route: /hr/users/<id>/edit — edit any user's details and verification status
+  - Route: /hr/users/<id>/delete — delete an applicant account (and all their applications)
+  - HR accounts are protected from deletion
+  - HR can manually set is_verified=True to activate accounts (useful when email fails)
+  - Located in HR portal sidebar under "Management"
+
 Security note:
   - Gmail App Password used instead of account password (Google security policy)
   - Credentials stored in environment variables, never hardcoded in source code

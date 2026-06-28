@@ -1,0 +1,74 @@
+{% extends "base_hr.html" %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-title">User Management</div>
+        <div class="page-sub">{{ users | length }} user{{ 's' if users | length != 1 }} registered</div>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="background:#dcfce7;color:#166534;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">{{ messages[0] }}</div>
+{% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Verified</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="cand-avatar" style="background:{% if user.role == 'hr' %}var(--blue){% else %}#7c3aed{% endif %};width:34px;height:34px;font-size:12px;">{{ user.name[:2].upper() }}</div>
+                            <span class="fw-700">{{ user.name }}</span>
+                        </div>
+                    </td>
+                    <td class="text-muted text-sm">{{ user.email }}</td>
+                    <td class="text-muted text-sm">{{ user.phone or '—' }}</td>
+                    <td>
+                        <span class="stat-badge {% if user.role == 'hr' %}badge-blue{% else %}badge-orange{% endif %}">
+                            {{ user.role | upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_verified %}
+                        <span style="color:var(--green);font-weight:700;font-size:12px;">&#x2713; Verified</span>
+                        {% else %}
+                        <span style="color:var(--red);font-weight:700;font-size:12px;">&#x2715; Unverified</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            <a href="{{ url_for('hr_edit_user', user_id=user.id) }}" class="btn btn-outline btn-sm">Edit</a>
+                            {% if user.role != 'hr' %}
+                            <form method="POST" action="{{ url_for('hr_delete_user', user_id=user.id) }}"
+                                  onsubmit="return confirm('Delete {{ user.name }}? This also removes all their applications.')">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                            {% else %}
+                            <span style="font-size:11px;color:var(--text-muted);padding:4px 6px;">Protected</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No users found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -36,6 +36,10 @@
                 <span>Screening Results</span>
             </a>
             <div class="sidebar-section">Management</div>
+            <a href="{{ url_for('hr_user_management') }}" class="nav-item {% if request.endpoint in ['hr_user_management','hr_edit_user'] %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F464;</span>
+                <span>User Management</span>
+            </a>
             <a href="{{ url_for('hr_settings') }}" class="nav-item {% if request.endpoint == 'hr_settings' %}active{% endif %}">
                 <span class="nav-item-icon">&#x2699;&#xFE0F;</span>
                 <span>Settings</span>

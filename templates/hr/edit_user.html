@@ -1,0 +1,67 @@
+{% extends "base_hr.html" %}
+{% block title %}Edit User{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="{{ url_for('hr_user_management') }}" class="btn btn-outline btn-sm">&larr; Back</a>
+        <div class="page-title">Edit User &mdash; {{ user.name }}</div>
+    </div>
+</div>
+
+<div class="card" style="max-width:600px;">
+    <div class="card-header"><div class="card-title">User Details</div></div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('hr_edit_user', user_id=user.id) }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" value="{{ user.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ user.email }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" name="phone" value="{{ user.phone or '' }}" placeholder="0123456789">
+            </div>
+            <div class="form-group">
+                <label>Address Line 1</label>
+                <input type="text" name="address1" value="{{ user.address1 or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Address Line 2</label>
+                <input type="text" name="address2" value="{{ user.address2 or '' }}">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Postcode</label>
+                    <input type="text" name="postcode" value="{{ user.postcode or '' }}" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <select name="state" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:100%;background:#fff;">
+                        <option value="">Select state</option>
+                        {% for s in ['Johor','Kedah','Kelantan','Melaka','Negeri Sembilan','Pahang','Pulau Pinang','Perak','Perlis','Sabah','Sarawak','Selangor','Terengganu','W.P. Kuala Lumpur','W.P. Labuan','W.P. Putrajaya'] %}
+                        <option {% if user.state == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email Verification</label>
+                <select name="is_verified" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:100%;background:#fff;">
+                    <option value="1" {% if user.is_verified %}selected{% endif %}>&#x2713; Verified</option>
+                    <option value="0" {% if not user.is_verified %}selected{% endif %}>&#x2715; Not Verified</option>
+                </select>
+                <span class="form-hint">Set to Verified to manually activate an account.</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('hr_user_management') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

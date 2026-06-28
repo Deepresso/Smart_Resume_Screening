@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful &mdash; SmartResume</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<!-- Modal overlay -->
+<div style="min-height:100vh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:440px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.12);">
+        <div style="width:64px;height:64px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;">&#x2709;&#xFE0F;</div>
+        <h2 style="font-size:22px;font-weight:800;color:#1e293b;margin-bottom:10px;">Verification Email Sent!</h2>
+        <p style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:6px;">
+            A 4-digit verification code has been sent to:
+        </p>
+        <p style="font-size:15px;font-weight:700;color:#ea580c;margin-bottom:20px;">{{ email }}</p>
+        <div style="background:#fff7ed;border-radius:10px;padding:14px 18px;margin-bottom:24px;text-align:left;">
+            <p style="font-size:12px;color:#92400e;margin:0;line-height:1.6;">
+                <strong>Next steps:</strong><br>
+                1. Check your email inbox (and spam folder)<br>
+                2. Sign in with your email and password<br>
+                3. Enter the 4-digit code to activate your account
+            </p>
+        </div>
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-full" style="display:block;text-align:center;">OK, Go to Sign In</a>
+    </div>
+</div>
+</body>
+</html>
