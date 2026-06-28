@@ -500,7 +500,59 @@ Why applicant-only registration?
 
 
 --------------------------------------------------------------------------------
-15. LIMITATIONS AND FUTURE IMPROVEMENTS
+15. DEPLOYMENT
+--------------------------------------------------------------------------------
+Platform    : Render (render.com)
+Repository  : https://github.com/Deepresso/Smart_Resume_Screening
+Database    : PostgreSQL (Render free tier, replaces SQLite in production)
+
+Files added for deployment:
+  requirements.txt  - All Python dependencies with pinned versions
+  Procfile          - Tells Render how to start the app: gunicorn app:app
+  render.yaml       - Full deployment config (web service + PostgreSQL database)
+
+Key deployment changes in app.py:
+  - SECRET_KEY is read from environment variable (Render auto-generates a secure one)
+  - DATABASE_URL is read from environment variable (Render injects this automatically)
+  - Render provides DATABASE_URL as postgres:// — app.py converts it to postgresql://
+    because SQLAlchemy 2.x requires the postgresql:// scheme
+
+How auto-deployment works:
+  1. Code is pushed to GitHub (main branch)
+  2. Render detects the push and triggers a rebuild
+  3. Render runs: pip install -r requirements.txt
+  4. Render starts the app with: gunicorn app:app
+  5. The app is accessible at the Render-assigned URL
+
+Production vs Local difference:
+  - Local  : Uses SQLite (instance/smart_resume.db), started with py app.py
+  - Render : Uses PostgreSQL, started with gunicorn, env vars injected by Render
+
+Known limitation:
+  - Render free tier spins down after 15 minutes of inactivity.
+    The first request after idle takes ~30 seconds to wake up.
+  - Uploaded resume files are stored on Render's ephemeral filesystem.
+    They persist during a session but are cleared on redeploy. For production,
+    files should be stored in cloud storage (e.g. AWS S3 or Cloudinary).
+    For FYP demo purposes this is acceptable.
+  - The BERT model (all-MiniLM-L6-v2, ~90MB) is downloaded from HuggingFace
+    on first resume submission. Subsequent submissions use the cached model.
+
+gunicorn:
+  - Gunicorn is a production-grade WSGI server for Python.
+  - Flask's built-in development server (py app.py) is not suitable for
+    production as it handles only one request at a time.
+  - Gunicorn handles concurrent requests and is the standard for deploying
+    Flask applications on cloud platforms.
+
+psycopg2-binary:
+  - The PostgreSQL adapter for Python. Required by SQLAlchemy to connect to
+    a PostgreSQL database. The binary version includes all native dependencies
+    pre-compiled so no system libraries need to be installed separately.
+
+
+--------------------------------------------------------------------------------
+16. LIMITATIONS AND FUTURE IMPROVEMENTS
 --------------------------------------------------------------------------------
 
 Current Limitations:
