@@ -1,0 +1,526 @@
+================================================================================
+SMART RESUME SCREENING SYSTEM — PROJECT DEVELOPMENT NOTES
+For FYP Report Reference Material
+================================================================================
+Project Title : Smart Resume Screening System
+Developer     : Judson Chin
+Institution   : UOW Malaysia KDU Penang University College
+Framework     : Flask (Python)
+Database      : SQLite (via SQLAlchemy ORM)
+Date Written  : June 2026
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. SYSTEM OVERVIEW
+--------------------------------------------------------------------------------
+The Smart Resume Screening System is a full-stack web application that automates
+the resume screening process using Natural Language Processing (NLP) techniques.
+The system serves two types of users:
+
+  - HR Manager : Posts job vacancies, reviews screened candidates, shortlists
+                 or rejects applicants based on NLP-generated scores.
+
+  - Applicant  : Registers an account, browses active job postings, uploads
+                 a resume (PDF or DOCX), and views their match scores.
+
+When an applicant submits a resume, the system automatically runs four NLP
+algorithms and produces a composite relevance score. HR can then view all
+applicants ranked from highest to lowest score.
+
+
+--------------------------------------------------------------------------------
+2. TECHNOLOGY STACK
+--------------------------------------------------------------------------------
+Backend Framework   : Flask 3.x (Python)
+Database            : SQLite with SQLAlchemy ORM
+Authentication      : Flask-Login (session management), Flask-Bcrypt (hashing)
+File Handling       : Werkzeug (secure file uploads)
+PDF Extraction      : PyMuPDF (fitz)
+DOCX Extraction     : python-docx
+NLP - Keyword       : Plain Python string matching
+NLP - Fuzzy         : rapidfuzz (Levenshtein distance)
+NLP - TF-IDF        : scikit-learn (TfidfVectorizer + cosine_similarity)
+NLP - Semantic      : sentence-transformers (BERT model: all-MiniLM-L6-v2)
+Frontend            : HTML5, CSS3 (custom design system), Vanilla JavaScript
+Templating Engine   : Jinja2 (built into Flask)
+
+
+--------------------------------------------------------------------------------
+3. PROJECT FILE STRUCTURE
+--------------------------------------------------------------------------------
+Smart_Resume_Screening/
+  app.py              - Main Flask application, all routes and business logic
+  models.py           - SQLAlchemy database models (User, JobPosting, Application)
+  screening.py        - NLP engine (all 4 scoring algorithms)
+  static/
+    css/
+      style.css       - Full custom CSS design system (slate + orange theme)
+  templates/
+    base_hr.html      - HR portal base layout with sidebar navigation
+    base_applicant.html - Applicant portal base layout with sidebar navigation
+    auth/
+      login.html      - Login page (both roles, directs to correct portal)
+      register.html   - Applicant registration page only
+    hr/
+      dashboard.html        - HR dashboard with live statistics
+      job_postings.html     - List and manage all job postings
+      new_job_posting.html  - Create new job posting with keyword tags
+      edit_job_posting.html - Edit existing job posting
+      screening_index.html  - Select a job to view its screening results
+      screening_results.html - Ranked candidates table with all 4 scores
+      candidate_detail.html  - Individual candidate profile + score breakdown
+      candidates.html        - All candidates across all jobs
+      settings.html          - HR account settings (name, email, password)
+    applicant/
+      dashboard.html         - Applicant homepage with jobs and applications
+      browse_jobs.html       - All active job listings
+      apply_job.html         - Job details + resume upload form
+      my_applications.html   - Applicant's submitted applications + scores
+      application_detail.html - Detailed score breakdown per application
+      settings.html          - Applicant account settings
+  uploads/            - Uploaded resume files (PDF/DOCX)
+  instance/
+    smart_resume.db   - SQLite database file
+
+
+--------------------------------------------------------------------------------
+4. DATABASE DESIGN
+--------------------------------------------------------------------------------
+Three tables are used, defined in models.py using SQLAlchemy ORM.
+
+TABLE: users
+  id         INTEGER PRIMARY KEY
+  name       VARCHAR(100)   Full name of the user
+  email      VARCHAR(150)   Unique login email
+  password   VARCHAR(255)   bcrypt-hashed password
+  role       VARCHAR(20)    Either 'hr' or 'applicant'
+
+TABLE: job_postings
+  id          INTEGER PRIMARY KEY
+  title       VARCHAR(150)   Job title
+  company     VARCHAR(150)   Company name
+  location    VARCHAR(100)   Job location
+  description TEXT           Full job description (used for TF-IDF and BERT)
+  keywords    TEXT           Comma-separated screening keywords
+  created_by  INTEGER        Foreign key to users.id
+  created_at  DATETIME       Timestamp of creation
+  is_active   BOOLEAN        Whether the posting is open or closed
+
+TABLE: applications
+  id               INTEGER PRIMARY KEY
+  user_id          INTEGER    Foreign key to users.id
+  job_id           INTEGER    Foreign key to job_postings.id
+  resume_path      VARCHAR    Filename of the uploaded resume
+  resume_text      TEXT       Extracted plain text from the resume
+  cover_letter     TEXT       Optional cover letter text
+  keyword_score    FLOAT      Score from Keyword Matching algorithm
+  fuzzy_score      FLOAT      Score from Fuzzy Matching algorithm
+  similarity_score FLOAT      Score from TF-IDF Cosine Similarity
+  semantic_score   FLOAT      Score from BERT Semantic Similarity
+  composite_score  FLOAT      Weighted final score
+  status           VARCHAR    'submitted', 'shortlisted', or 'rejected'
+  applied_at       DATETIME   Timestamp of submission
+
+
+--------------------------------------------------------------------------------
+5. AUTHENTICATION SYSTEM
+--------------------------------------------------------------------------------
+Implementation file: app.py, models.py
+
+How it works:
+  - Passwords are hashed using bcrypt before storing in the database.
+    Plain text passwords are never saved.
+  - Flask-Login manages user sessions via a secure session cookie.
+  - The @login_required decorator protects all routes from unauthenticated access.
+  - Two custom decorators enforce role-based access:
+      @hr_required       - redirects applicants away from /hr/* routes
+      @applicant_required - redirects HR away from /applicant/* routes
+
+HR Account:
+  - There is no HR self-registration page. The default HR account is
+    automatically seeded into the database when the app starts for the
+    first time (if no HR account exists).
+  - Default credentials: admin@smartresume.com / admin123
+
+Applicant Account:
+  - Applicants register through the /register page with first name,
+    last name, email, and password.
+  - On successful registration, the user is immediately logged in and
+    redirected to the applicant dashboard.
+
+Password Change:
+  - Both HR and Applicant can change their name, email, and password
+    from their respective Settings pages.
+  - Password is re-hashed with bcrypt before updating in the database.
+
+
+--------------------------------------------------------------------------------
+6. JOB POSTING MANAGEMENT
+--------------------------------------------------------------------------------
+Implementation file: app.py (routes), templates/hr/
+
+HR can perform full CRUD on job postings:
+
+  CREATE : Fill in job title, company, location, description, and add
+           screening keywords using a tag-style input (JavaScript-driven).
+           Keywords are stored as a comma-separated string in the database.
+
+  READ   : All job postings are listed in a table showing title, applicant
+           count, status (active/closed), and date posted.
+
+  UPDATE : HR can edit any field of an existing job posting. The existing
+           keywords are pre-loaded as tags in the edit form.
+
+  DELETE : Deleting a job also deletes all related applications first
+           (to avoid foreign key constraint errors in SQLite).
+
+  TOGGLE : HR can close or reopen a job posting. Closed jobs do not
+           appear in the applicant's Browse Jobs page.
+
+Keyword Input (JavaScript):
+  - Keywords are entered one at a time and displayed as removable tag chips.
+  - Before form submission, all keyword tags are collected into a hidden
+    input field as a comma-separated string.
+  - The Enter key triggers keyword addition without submitting the form.
+
+
+--------------------------------------------------------------------------------
+7. RESUME UPLOAD AND TEXT EXTRACTION
+--------------------------------------------------------------------------------
+Implementation file: screening.py (extract_text), app.py (applicant_apply route)
+
+Upload Process:
+  1. Applicant selects a PDF or DOCX file (max 10MB).
+  2. The file is validated for allowed extensions (pdf, docx).
+  3. The file is saved to the /uploads/ folder with a unique filename
+     format: {user_id}_{job_id}_{original_filename}
+  4. Text is extracted from the file immediately after saving.
+  5. NLP scoring runs on the extracted text.
+  6. All scores and the extracted text are saved to the applications table.
+
+Text Extraction:
+  - PDF files  : PyMuPDF (fitz) iterates through each page and concatenates
+                 the text content.
+  - DOCX files : python-docx reads each paragraph and joins non-empty lines.
+
+Duplicate prevention:
+  - A check is performed before saving. If the applicant has already applied
+    to the same job, the submission is rejected with a flash message.
+
+
+--------------------------------------------------------------------------------
+8. NLP SCREENING ENGINE
+--------------------------------------------------------------------------------
+Implementation file: screening.py
+
+The system uses FOUR NLP techniques to score each resume against a job posting.
+All functions are in screening.py and called from compute_scores().
+
+------------------------------------
+8.1 KEYWORD MATCHING (Weight: 30%)
+------------------------------------
+Function: keyword_score(resume_text, keywords)
+
+How it works:
+  - The resume text and each keyword are both converted to lowercase.
+  - For each keyword in the job's keyword list, the system checks if the
+    keyword appears anywhere in the resume text using Python's 'in' operator.
+  - Score = (number of keywords found / total keywords) x 100
+
+Example:
+  Job keywords: Python, Flask, SQL, Docker
+  Resume contains: Python, Flask, SQL
+  Score = 3/4 x 100 = 75%
+
+Strength  : Simple, transparent, exact matching
+Limitation: Does not catch synonyms or spelling variations
+
+------------------------------------
+8.2 FUZZY MATCHING (Weight: 25%)
+------------------------------------
+Function: fuzzy_score(resume_text, keywords)
+Library  : rapidfuzz
+
+How it works:
+  - The resume text is tokenized into individual words.
+  - For each keyword, the system computes the Levenshtein ratio between
+    the keyword and every word in the resume, then takes the best match.
+  - The average of all keyword best-match scores is the fuzzy score.
+  - Uses fuzz.ratio() which measures character-level edit distance.
+
+Example:
+  Keyword: "Python"
+  Resume word: "Pyhton" (typo)
+  fuzz.ratio("python", "pyhton") = ~91% — still detected as a strong match
+
+Strength  : Handles typos, abbreviations, and minor spelling variations
+Limitation: Can produce false positives with short words
+
+------------------------------------
+8.3 TEXT SIMILARITY — TF-IDF (Weight: 25%)
+------------------------------------
+Function: similarity_score(resume_text, job_description)
+Library  : scikit-learn
+
+How it works:
+  - TF-IDF (Term Frequency-Inverse Document Frequency) converts each
+    document (resume and job description) into a numerical vector.
+  - TF measures how often a word appears in a document.
+  - IDF reduces the weight of common words that appear in both documents.
+  - Cosine similarity measures the angle between the two TF-IDF vectors.
+  - A score of 100% means the documents are identical in word distribution.
+  - No training is required — the vectorizer is built fresh for each pair.
+
+Strength  : Captures overall thematic alignment between documents
+Limitation: Treats words as independent tokens, ignores word meaning and context
+
+------------------------------------
+8.4 BERT SEMANTIC SIMILARITY (Weight: 20%)
+------------------------------------
+Function: semantic_score(resume_text, job_description)
+Library  : sentence-transformers (model: all-MiniLM-L6-v2)
+
+How it works:
+  - A pre-trained BERT-based model (all-MiniLM-L6-v2) encodes both the
+    resume and job description into dense vector embeddings (384 dimensions).
+  - These embeddings capture the semantic meaning of the text, not just
+    the words used.
+  - Cosine similarity is computed between the two embedding vectors.
+  - The model is loaded lazily on first use and cached in memory.
+
+Example of what this catches that other techniques miss:
+  Job says: "Experience with web backend frameworks required"
+  Resume says: "Built REST APIs using Django and Flask"
+  - Keyword score: 0% (no matching keywords)
+  - TF-IDF score: low (different words)
+  - BERT score: high (understands Django/Flask = web backend framework)
+
+Strength  : Understands meaning, synonyms, and context
+            Distinguishes: "managed a team" ≈ "team leadership experience"
+Limitation: Slower than other techniques, larger memory footprint
+
+------------------------------------
+8.5 COMPOSITE SCORE FORMULA
+------------------------------------
+composite = (keyword x 0.30) + (fuzzy x 0.25) + (tfidf x 0.25) + (bert x 0.20)
+
+Rationale for weights:
+  - Keyword Matching gets the highest weight (30%) because exact keyword
+    presence is the most direct signal of qualification.
+  - Fuzzy and TF-IDF each get 25% as complementary surface-level techniques.
+  - BERT gets 20% as a deep understanding layer that adds semantic depth
+    without dominating, since it may score high even for loosely related text.
+
+All scores are stored in the database and displayed to HR on the
+Screening Results page, ranked from highest to lowest composite score.
+
+
+--------------------------------------------------------------------------------
+9. HR PORTAL FEATURES
+--------------------------------------------------------------------------------
+
+Dashboard:
+  - Live count of total job postings, total applicants, shortlisted count,
+    and pending applications.
+  - Table of all job postings with applicant counts.
+  - Top 5 ranked applicants across all jobs.
+
+Screening Results (Two-level navigation):
+  - Screening Index page lists all job postings. HR clicks a job to view
+    its specific candidates.
+  - Screening Results page shows all applicants for that job ranked by
+    composite score (highest first).
+  - Each row shows: rank, candidate name/email, composite score (colour-coded),
+    keyword score, fuzzy score, TF-IDF score, BERT semantic score, status.
+  - Actions per row: View profile, Shortlist (green tick), Reject (red cross).
+  - Export CSV button downloads a spreadsheet of all candidates for that job
+    with all scores and status — filename format: screening_{JobTitle}_{id}.csv
+    Implementation: hr_export_csv route uses Python's csv module and
+    io.StringIO to build the file in memory, returned as a Flask Response
+    with Content-Disposition: attachment.
+
+Candidate Detail:
+  - Shows extracted resume text in a scrollable box.
+  - Shows cover letter if submitted.
+  - Candidate info: name, email, job applied for, date, rank, status.
+  - Score breakdown with progress bars for all 4 techniques.
+  - Detailed Score Analysis section:
+      * Keyword Matching: green pills for found keywords, red for missing.
+      * Fuzzy Matching: per-keyword score bars with colour coding.
+      * Text Similarity: plain-English verdict based on score range.
+      * BERT Semantic: interpreted result (Excellent / Moderate / Low / Poor).
+  - Shortlist and Reject buttons update Application.status in the database.
+
+Candidates Page:
+  - All applicants across all HR's jobs, ordered by composite score.
+  - Includes a View button linking to the candidate detail page.
+
+Settings:
+  - HR can update their display name and email address.
+  - HR can change their password (bcrypt re-hashed before saving).
+
+
+--------------------------------------------------------------------------------
+10. APPLICANT PORTAL FEATURES
+--------------------------------------------------------------------------------
+
+Dashboard:
+  - Greeting with the applicant's real name from the database.
+  - Up to 4 active job listings shown as clickable cards.
+  - Up to 3 most recent applications with status and composite score.
+
+Browse Jobs:
+  - Grid of all active job postings with title, company, location, keywords.
+  - Clicking a job goes to the application page.
+  - Live search bar filters jobs by title, company, or keywords as the user
+    types — implemented with client-side JavaScript (no page reload needed).
+    The result counter updates dynamically to show matching jobs.
+
+Apply for Job:
+  - Shows full job description and screening keywords.
+  - Form accepts cover letter (optional) and resume file (PDF or DOCX).
+  - On submission, NLP scoring runs automatically.
+  - Duplicate applications for the same job are blocked.
+
+My Applications:
+  - Lists all submitted applications with job title, date, status, and
+    composite score.
+  - Each application has a "View Details →" button linking to the full
+    application detail page.
+
+Application Detail:
+  - Shows all 4 NLP scores with progress bars.
+  - Application Progress Timeline: a horizontal 4-step indicator showing
+      Step 1: Submitted (always green)
+      Step 2: Resume Parsed (green if resume text was extracted)
+      Step 3: NLP Scored (green if composite score > 0)
+      Step 4: Decision — Shortlisted (green), Not Selected (red), or
+              Pending Review (grey) depending on Application.status
+    The connecting bar between each step is also coloured to reflect completion.
+  - Status-based message:
+      Shortlisted → congratulations message
+      Rejected    → notification message
+      Submitted   → under review message
+  - Rank among all applicants for that job.
+  - Job keywords shown for reference (so applicant can improve their resume).
+
+Settings:
+  - Applicant can update name, email, and password.
+
+
+--------------------------------------------------------------------------------
+11. ROLE-BASED ACCESS CONTROL
+--------------------------------------------------------------------------------
+Implementation: app.py (hr_required, applicant_required decorators)
+
+Two Python decorators were created using functools.wraps:
+
+  @hr_required
+    - Applied to all /hr/* routes.
+    - If a logged-in applicant tries to access an HR page, they are
+      redirected to their own dashboard.
+
+  @applicant_required
+    - Applied to all /applicant/* routes.
+    - If an HR user tries to access an applicant page, they are redirected
+      to the HR dashboard.
+
+Both decorators are used alongside @login_required to ensure:
+  1. Only logged-in users can access protected pages.
+  2. Each role can only access their own section of the system.
+
+
+--------------------------------------------------------------------------------
+12. CUSTOM ERROR HANDLING
+--------------------------------------------------------------------------------
+
+404 Page:
+  - A custom @app.errorhandler(404) function is registered in app.py.
+  - Any URL that does not exist renders templates/404.html.
+  - The page shows "404 — Page Not Found" with a link back to the login page.
+
+Database Auto-Migration:
+  - When the semantic_score column was added to the Application model,
+    existing databases would not have this column.
+  - An auto-migration block was added to app.py that runs on startup:
+      It inspects the existing 'applications' table columns.
+      If 'semantic_score' is missing, it runs ALTER TABLE to add the column.
+      This ensures the app works on both new and existing databases.
+
+
+--------------------------------------------------------------------------------
+13. SCORING WEIGHT EVOLUTION
+--------------------------------------------------------------------------------
+Initial design (3 techniques):
+  Keyword 40%  +  Fuzzy 30%  +  TF-IDF 30%  =  100%
+
+After adding BERT (4 techniques):
+  Keyword 30%  +  Fuzzy 25%  +  TF-IDF 25%  +  BERT 20%  =  100%
+
+Reason for adjusting weights:
+  Adding BERT required reducing the weights of the other three techniques
+  proportionally while keeping keyword matching as the highest-weighted
+  signal, since exact keyword presence remains the most direct indicator
+  of candidate qualification for a specific role.
+
+
+--------------------------------------------------------------------------------
+14. KEY DESIGN DECISIONS
+--------------------------------------------------------------------------------
+
+Why SQLite?
+  SQLite was chosen for development because it requires no separate database
+  server, stores data in a single file, and is fully supported by SQLAlchemy.
+  Switching to PostgreSQL or MySQL only requires changing one line in app.py:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://...'
+
+Why lazy-load the BERT model?
+  Loading sentence-transformers imports PyTorch, which takes 3-5 seconds.
+  Loading it at module import time would slow down every Flask restart.
+  Instead, the model is loaded on the first resume submission and kept
+  in memory (_st_model global variable). Subsequent submissions are fast.
+
+Why store extracted resume text in the database?
+  Storing resume_text in the applications table means:
+    - NLP can be re-run without re-reading the file.
+    - HR can read the resume content directly in the browser.
+    - The file itself only needs to be kept for download purposes.
+
+Why not use Flask-Migrate for schema changes?
+  Flask-Migrate (Alembic) adds complexity for a single-developer FYP project.
+  Instead, a lightweight auto-migration block checks for missing columns on
+  startup and applies ALTER TABLE if needed. This is sufficient for SQLite
+  and the scale of this project.
+
+Why applicant-only registration?
+  Allowing self-registration for HR would create a security vulnerability
+  where anyone could create an HR account and access all candidate data.
+  The HR account is seeded automatically by the system on first startup.
+
+
+--------------------------------------------------------------------------------
+15. LIMITATIONS AND FUTURE IMPROVEMENTS
+--------------------------------------------------------------------------------
+
+Current Limitations:
+  1. Only one HR account is supported (the seeded admin account).
+  2. Existing applications do not get re-scored when job keywords are edited.
+  3. BERT semantic score may be slow on first submission (model loading).
+  4. The system does not send email notifications for shortlisted applicants.
+  5. No admin panel to manage multiple HR accounts.
+
+Possible Future Improvements:
+  1. Add email notifications (Flask-Mail) when applicant is shortlisted.
+  2. Allow HR to re-screen existing applications after editing keywords.
+  3. Add resume parsing to extract structured data (name, education, skills).
+  4. Add a comparison view to display two candidates side by side.
+  5. Deploy to a cloud server (Render, Railway, or DigitalOcean) with
+     PostgreSQL for production use.
+  6. Allow HR to adjust scoring weights through the settings page.
+  7. Add a feedback mechanism where HR decisions train a future ML model.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================

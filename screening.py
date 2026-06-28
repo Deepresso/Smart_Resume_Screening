@@ -5,6 +5,15 @@ from rapidfuzz import fuzz
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+_st_model = None
+
+def _get_st_model():
+    global _st_model
+    if _st_model is None:
+        from sentence_transformers import SentenceTransformer
+        _st_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _st_model
+
 
 # ── Text Extraction ──────────────────────────────────────────────────────────
 
@@ -65,20 +74,52 @@ def similarity_score(resume_text, job_description):
         return 0.0
 
 
+def semantic_score(resume_text, job_description):
+    """BERT semantic similarity using sentence embeddings (all-MiniLM-L6-v2)."""
+    if not resume_text or not job_description:
+        return 0.0
+    try:
+        from sentence_transformers import util
+        model = _get_st_model()
+        embeddings = model.encode([resume_text, job_description], convert_to_tensor=True)
+        score = util.cos_sim(embeddings[0], embeddings[1]).item()
+        return round(max(0.0, float(score)) * 100, 2)
+    except Exception:
+        return 0.0
+
+
+def keyword_breakdown(resume_text, keywords):
+    """Per-keyword found/not-found list."""
+    resume_lower = resume_text.lower()
+    return [{'kw': kw, 'found': kw.lower() in resume_lower} for kw in keywords]
+
+
+def fuzzy_breakdown(resume_text, keywords):
+    """Per-keyword best fuzzy match score (0-100)."""
+    resume_words = re.findall(r'\b\w+\b', resume_text.lower())
+    result = []
+    for kw in keywords:
+        best = max((fuzz.ratio(kw.lower(), word) for word in resume_words), default=0)
+        result.append({'kw': kw, 'score': round(best, 1)})
+    return result
+
+
 def compute_scores(resume_text, job_description, keywords):
-    """Run all three algorithms and return individual + composite scores."""
+    """Run all four algorithms and return individual + composite scores."""
     kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if keywords else []
 
     kw  = keyword_score(resume_text, kw_list)
     fz  = fuzzy_score(resume_text, kw_list)
     sim = similarity_score(resume_text, job_description)
+    sem = semantic_score(resume_text, job_description)
 
-    # Weighted composite: keyword 40%, fuzzy 30%, similarity 30%
-    composite = round((kw * 0.4) + (fz * 0.3) + (sim * 0.3), 2)
+    # Weighted composite: keyword 30%, fuzzy 25%, TF-IDF 25%, BERT 20%
+    composite = round((kw * 0.30) + (fz * 0.25) + (sim * 0.25) + (sem * 0.20), 2)
 
     return {
         'keyword_score':    kw,
         'fuzzy_score':      fz,
         'similarity_score': sim,
+        'semantic_score':   sem,
         'composite_score':  composite,
     }

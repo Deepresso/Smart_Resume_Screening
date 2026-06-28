@@ -2,12 +2,16 @@
 {% block title %}Browse Jobs{% endblock %}
 {% block content %}
 <div class="page-header">
-    <div><div class="page-title">Browse Jobs</div><div class="page-sub">{{ jobs | length }} active position{{ 's' if jobs | length != 1 }}</div></div>
+    <div><div class="page-title">Browse Jobs</div><div class="page-sub" id="job-count">{{ jobs | length }} active position{{ 's' if jobs | length != 1 }}</div></div>
+    <div class="header-actions">
+        <input type="text" id="job-search" placeholder="Search jobs..." oninput="filterJobs(this.value)"
+               style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:220px;outline:none;">
+    </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+<div id="job-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
     {% for job in jobs %}
-    <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
+    <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card" data-title="{{ job.title | lower }}" data-company="{{ job.company | lower }}" data-keywords="{{ job.keywords | lower if job.keywords else '' }}">
         <div class="job-card-header">
             <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">
                 {{ job.title[:2].upper() }}
@@ -33,4 +37,21 @@
     </div>
     {% endfor %}
 </div>
+<div id="no-results" style="display:none;text-align:center;padding:60px;color:var(--text-muted);">
+    No jobs match your search.
+</div>
+<script>
+function filterJobs(q) {
+    q = q.toLowerCase().trim();
+    const cards = document.querySelectorAll('#job-grid .job-card');
+    let visible = 0;
+    cards.forEach(card => {
+        const match = !q || card.dataset.title.includes(q) || card.dataset.company.includes(q) || card.dataset.keywords.includes(q);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    document.getElementById('job-count').textContent = visible + ' active position' + (visible !== 1 ? 's' : '');
+    document.getElementById('no-results').style.display = (visible === 0 && q) ? '' : 'none';
+}
+</script>
 {% endblock %}

@@ -2,51 +2,44 @@
 {% block title %}Settings{% endblock %}
 {% block content %}
 <div class="page-header">
-    <div><div class="page-title">Settings</div><div class="page-sub">Manage your account and system preferences</div></div>
-    <button class="btn btn-primary">Save Changes</button>
+    <div><div class="page-title">Account Settings</div><div class="page-sub">Update your HR account information</div></div>
 </div>
-<div class="grid-2" style="align-items:start;">
-    <div>
-        <div class="card" style="margin-bottom:16px;">
-            <div class="card-header"><div class="card-title">Profile Information</div></div>
-            <div class="card-body">
-                <div class="form-row">
-                    <div class="form-group"><label>First Name</label><input type="text" value="Sarah"></div>
-                    <div class="form-group"><label>Last Name</label><input type="text" value="Lim"></div>
-                </div>
-                <div class="form-group"><label>Email</label><input type="email" value="sarah.lim@company.com"></div>
-                <div class="form-group"><label>Company</label><input type="text" value="Tech Solutions Sdn Bhd"></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><div class="card-title">Change Password</div></div>
-            <div class="card-body">
-                <div class="form-group"><label>Current Password</label><input type="password" placeholder="••••••••••"></div>
-                <div class="form-group"><label>New Password</label><input type="password" placeholder="••••••••••"></div>
-                <div class="form-group"><label>Confirm New Password</label><input type="password" placeholder="••••••••••"></div>
-                <button class="btn btn-primary">Update Password</button>
-            </div>
-        </div>
-    </div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="background:{% if 'saved' in messages[0] %}var(--green-bg);color:var(--green){% else %}#fee2e2;color:#b91c1c{% endif %};border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">
+    {{ messages[0] }}
+</div>
+{% endif %}
+{% endwith %}
+
+<div style="max-width:520px;">
     <div class="card">
-        <div class="card-header"><div class="card-title">Screening Preferences</div></div>
+        <div class="card-header"><div class="card-title">Profile Information</div></div>
         <div class="card-body">
-            <div style="margin-bottom:20px;">
-                <div class="fw-700" style="font-size:13px;margin-bottom:4px;">Default Scoring Weights</div>
-                <div class="text-muted text-sm" style="margin-bottom:12px;">Adjust how each NLP technique contributes to the composite score</div>
-                <div class="form-group"><label>Keyword Matching Weight (%)</label><input type="number" value="33"></div>
-                <div class="form-group"><label>Fuzzy Matching Weight (%)</label><input type="number" value="33"></div>
-                <div class="form-group"><label>Text Similarity Weight (%)</label><input type="number" value="34"></div>
-            </div>
-            <div class="divider"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-                <div><div class="fw-700" style="font-size:13px;">Auto-screen on submission</div><div class="text-muted text-sm">Run NLP screening automatically when a resume is uploaded</div></div>
-                <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
-                <div><div class="fw-700" style="font-size:13px;">Show scores to applicants</div><div class="text-muted text-sm">Allow candidates to see their match score</div></div>
-                <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-            </div>
+            <form method="POST" action="{{ url_for('hr_settings') }}">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" value="{{ current_user.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" value="{{ current_user.email }}" required>
+                </div>
+                <div class="divider" style="margin:20px 0;"></div>
+                <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Change Password <span class="text-muted" style="font-weight:400;">(leave blank to keep current)</span></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" name="new_password" placeholder="New password">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" name="confirm_password" placeholder="Confirm password">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
         </div>
     </div>
 </div>

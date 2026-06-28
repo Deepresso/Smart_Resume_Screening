@@ -1,86 +1,141 @@
 {% extends "base_applicant.html" %}
-{% block title %}Match Score & Feedback{% endblock %}
+{% block title %}Application Detail{% endblock %}
 {% block content %}
 <div class="page-header">
-    <a href="{{ url_for('applicant_applications') }}" class="btn btn-outline btn-sm">&larr; Match Score &amp; Feedback — Software Engineer</a>
-    <span class="status status-shortlisted">Shortlisted</span>
+    <a href="{{ url_for('applicant_applications') }}" class="btn btn-outline btn-sm">&larr; My Applications</a>
+    <span class="status status-{{ appl.status }}">{{ appl.status | capitalize }}</span>
 </div>
 
 <div class="card" style="margin-bottom:20px;">
     <div class="card-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
             <div>
-                <div style="font-size:16px;font-weight:800;margin-bottom:2px;">Your Resume Match Score</div>
-                <div class="text-muted text-sm">Software Engineer · Tech Solutions Sdn Bhd · Screened on 14 Apr 2026</div>
+                <div style="font-size:16px;font-weight:800;margin-bottom:4px;">{{ appl.job.title }}</div>
+                <div class="text-muted text-sm">{{ appl.job.company }} &middot; Applied {{ appl.applied_at.strftime('%d %b %Y') }} &middot; Rank #{{ rank }} of {{ total }}</div>
+                {% if appl.status == 'shortlisted' %}
                 <div style="margin-top:10px;background:var(--green-bg);border-radius:8px;padding:8px 14px;display:inline-block;">
-                    <span style="font-size:13px;color:var(--green);font-weight:600;">&#x1F3C6; Congratulations! You have been <strong>shortlisted</strong> for this position. Your resume ranked <strong>#1 out of 84</strong> applicants.</span>
+                    <span style="font-size:13px;color:var(--green);font-weight:600;">&#x1F3C6; Congratulations! You have been <strong>shortlisted</strong> for this position.</span>
                 </div>
+                {% elif appl.status == 'rejected' %}
+                <div style="margin-top:10px;background:#fee2e2;border-radius:8px;padding:8px 14px;display:inline-block;">
+                    <span style="font-size:13px;color:#b91c1c;font-weight:600;">Your application was not selected to proceed further.</span>
+                </div>
+                {% else %}
+                <div style="margin-top:10px;background:#f1f5f9;border-radius:8px;padding:8px 14px;display:inline-block;">
+                    <span style="font-size:13px;color:var(--text-muted);font-weight:600;">&#x23F3; Your application is under review.</span>
+                </div>
+                {% endif %}
             </div>
             <div style="text-align:center;">
-                <div class="score-big">91.4%</div>
+                <div class="score-big">{{ appl.composite_score }}%</div>
                 <div class="score-label">Match Score</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Score Breakdown -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+<!-- Application Timeline -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body" style="padding:20px 24px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:16px;">Application Progress</div>
+        <div style="display:flex;align-items:center;gap:0;">
+            <!-- Step 1: Submitted -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x2713;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:var(--green);">Submitted</div>
+                <div style="font-size:10px;color:var(--text-muted);">{{ appl.applied_at.strftime('%d %b') }}</div>
+            </div>
+            <div style="flex:1;height:3px;background:var(--green);margin-bottom:22px;"></div>
+            <!-- Step 2: Resume Parsed -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+                <div style="width:36px;height:36px;border-radius:50%;background:{% if appl.resume_text %}var(--green){% else %}#e2e8f0{% endif %};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x2713;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:{% if appl.resume_text %}var(--green){% else %}var(--text-muted){% endif %};">Resume Parsed</div>
+                <div style="font-size:10px;color:var(--text-muted);">PDF/DOCX extracted</div>
+            </div>
+            <div style="flex:1;height:3px;background:{% if appl.composite_score > 0 %}var(--green){% else %}#e2e8f0{% endif %};margin-bottom:22px;"></div>
+            <!-- Step 3: NLP Scored -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+                <div style="width:36px;height:36px;border-radius:50%;background:{% if appl.composite_score > 0 %}var(--green){% else %}#e2e8f0{% endif %};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x2713;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:{% if appl.composite_score > 0 %}var(--green){% else %}var(--text-muted){% endif %};">NLP Scored</div>
+                <div style="font-size:10px;color:var(--text-muted);">4 techniques applied</div>
+            </div>
+            <div style="flex:1;height:3px;background:{% if appl.status in ['shortlisted','rejected'] %}{% if appl.status == 'shortlisted' %}var(--green){% else %}var(--red){% endif %}{% else %}#e2e8f0{% endif %};margin-bottom:22px;"></div>
+            <!-- Step 4: Decision -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+                {% if appl.status == 'shortlisted' %}
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x1F3C6;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:var(--green);">Shortlisted</div>
+                {% elif appl.status == 'rejected' %}
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x2715;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:var(--red);">Not Selected</div>
+                {% else %}
+                <div style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:16px;font-weight:700;">&#x23F3;</div>
+                <div style="font-size:11px;font-weight:700;margin-top:6px;color:var(--text-muted);">Pending Review</div>
+                {% endif %}
+                <div style="font-size:10px;color:var(--text-muted);">HR decision</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x1F50D;</div>
             <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Keyword Matching</div>
-            <div style="font-size:32px;font-weight:900;color:var(--blue);">88%</div>
+            <div style="font-size:32px;font-weight:900;color:var(--blue);">{{ appl.keyword_score }}%</div>
             <div class="progress" style="margin:10px 0;">
-                <div class="progress-fill fill-blue" style="width:88%;"></div>
+                <div class="progress-fill fill-blue" style="width:{{ appl.keyword_score }}%;"></div>
             </div>
-            <div class="text-muted text-sm">8 out of 10 required keywords were found in your resume.</div>
+            <div class="text-muted text-sm">How many required keywords were found in your resume.</div>
         </div>
     </div>
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x270F;&#xFE0F;</div>
             <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Fuzzy Matching</div>
-            <div style="font-size:32px;font-weight:900;color:#7c3aed;">92%</div>
+            <div style="font-size:32px;font-weight:900;color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
             <div class="progress" style="margin:10px 0;">
-                <div class="progress-fill" style="width:92%;background:#7c3aed;"></div>
+                <div class="progress-fill" style="width:{{ appl.fuzzy_score }}%;background:#7c3aed;"></div>
             </div>
-            <div class="text-muted text-sm">High tolerance for spelling variations detected. Strong match.</div>
+            <div class="text-muted text-sm">Partial and near-match tolerance for keyword variations.</div>
         </div>
     </div>
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x2728;</div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Text Similarity (TF-IDF)</div>
-            <div style="font-size:32px;font-weight:900;color:var(--green);">94%</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Text Similarity</div>
+            <div style="font-size:32px;font-weight:900;color:var(--green);">{{ appl.similarity_score }}%</div>
             <div class="progress" style="margin:10px 0;">
-                <div class="progress-fill fill-green" style="width:94%;"></div>
+                <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
             </div>
-            <div class="text-muted text-sm">Excellent thematic alignment between your resume and the job description.</div>
+            <div class="text-muted text-sm">Thematic alignment between your resume and the job description.</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body" style="text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">&#x1F9E0;</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">BERT Semantic</div>
+            <div style="font-size:32px;font-weight:900;color:#0ea5e9;">{{ appl.semantic_score }}%</div>
+            <div class="progress" style="margin:10px 0;">
+                <div class="progress-fill" style="width:{{ appl.semantic_score }}%;background:#0ea5e9;"></div>
+            </div>
+            <div class="text-muted text-sm">Deep learning model that understands meaning, not just keywords.</div>
         </div>
     </div>
 </div>
 
-<!-- Detailed Feedback -->
+{% if appl.job.keywords %}
 <div class="card">
-    <div class="card-header"><div class="card-title">Detailed Feedback</div></div>
+    <div class="card-header"><div class="card-title">Job Keywords</div></div>
     <div class="card-body">
-        <div class="feedback-item">
-            <div class="feedback-icon">&#x2705;</div>
-            <div class="feedback-text"><strong>Matched Keywords:</strong> Python, Flask, NLP, MySQL, Machine Learning, HTML/CSS, JavaScript, REST API were found in your resume.</div>
+        <div class="kw-container">
+            {% for kw in appl.job.keywords.split(',') %}
+            <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;">{{ kw.strip() }}</span>
+            {% endfor %}
         </div>
-        <div class="feedback-item">
-            <div class="feedback-icon">&#x26A0;&#xFE0F;</div>
-            <div class="feedback-text"><strong>Missing Keywords:</strong> "Docker" and "CI/CD" were listed in the job description but not found in your resume. Consider adding these if applicable.</div>
-        </div>
-        <div class="feedback-item">
-            <div class="feedback-icon">&#x1F4A1;</div>
-            <div class="feedback-text"><strong>Fuzzy Matches:</strong> "scikit-learn" was matched to "ML library" and "TF-IDF" was matched to "text vectorisation" through fuzzy matching.</div>
-        </div>
-        <div class="feedback-item">
-            <div class="feedback-icon">&#x1F4C8;</div>
-            <div class="feedback-text"><strong>Tip:</strong> Your overall thematic alignment is excellent. To further improve, include more specific industry terms like "REST API", "unit testing" and "agile methodology".</div>
-        </div>
+        <p class="text-muted text-sm" style="margin-top:10px;">Ensure these keywords appear clearly in your resume to improve your match score.</p>
     </div>
 </div>
+{% endif %}
 {% endblock %}

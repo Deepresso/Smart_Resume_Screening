@@ -9,7 +9,7 @@
 <div style="display:flex;flex-direction:column;gap:12px;">
     {% for app in applications %}
     <div class="card">
-        <div class="card-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div class="card-body" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:space-between;">
             <!-- Job info -->
             <div style="flex:1;min-width:200px;">
                 <div class="fw-700" style="font-size:15px;">{{ app.job.title }}</div>
@@ -42,6 +42,7 @@
                     {% endif %}
                 </div>
             </div>
+            <a href="{{ url_for('applicant_application_detail', app_id=app.id) }}" class="btn btn-outline btn-sm" style="white-space:nowrap;">View Details &rarr;</a>
         </div>
     </div>
     {% endfor %}

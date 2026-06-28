@@ -1,0 +1,52 @@
+{% extends "base_hr.html" %}
+{% block title %}Screening Results{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="page-title">Screening Results</div>
+        <div class="page-sub">Select a job posting to view ranked candidates</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Job Posting</th>
+                    <th>Applicants</th>
+                    <th>Status</th>
+                    <th>Posted</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        <div class="fw-700">{{ job.title }}</div>
+                        <div class="text-muted text-sm">{{ job.company }} &middot; {{ job.location }}</div>
+                    </td>
+                    <td>
+                        <span class="stat-badge badge-blue">{{ job.applications | length }} applicant{{ 's' if job.applications | length != 1 }}</span>
+                    </td>
+                    <td>
+                        <span class="status status-{{ 'active' if job.is_active else 'closed' }}">{{ 'Active' if job.is_active else 'Closed' }}</span>
+                    </td>
+                    <td class="text-muted text-sm">{{ job.created_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('hr_screening_results', job_id=job.id) }}" class="btn btn-primary btn-sm">View Candidates &#x2192;</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">
+                        No job postings yet. <a href="{{ url_for('hr_new_job') }}" style="color:var(--blue);">Create one</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

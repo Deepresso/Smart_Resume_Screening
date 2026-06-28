@@ -8,7 +8,7 @@
     <div class="table-wrap">
         <table>
             <thead>
-                <tr><th>Candidate</th><th>Applied For</th><th>Applied On</th><th>Composite Score</th><th>Status</th></tr>
+                <tr><th>Candidate</th><th>Applied For</th><th>Applied On</th><th>Composite Score</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 {% for app in applications %}
@@ -27,9 +27,10 @@
                         {% else %}<span class="score-pill pill-red">{{ app.composite_score }}%</span>{% endif %}
                     </td>
                     <td><span class="status status-{{ app.status }}">{{ app.status | capitalize }}</span></td>
+                    <td><a href="{{ url_for('hr_candidate_detail', candidate_id=app.id) }}" class="btn btn-outline btn-sm">View</a></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No candidates yet.</td></tr>
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No candidates yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

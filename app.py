@@ -1,11 +1,13 @@
 import os
 from functools import wraps
-from flask import Flask, render_template, redirect, url_for, request, flash
+import csv
+import io
+from flask import Flask, render_template, redirect, url_for, request, flash, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from werkzeug.utils import secure_filename
 from models import db, User, JobPosting, Application
-from screening import extract_text, compute_scores
+from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
@@ -46,6 +48,15 @@ def applicant_required(f):
 
 with app.app_context():
     db.create_all()
+    # Auto-migrate: add semantic_score column to existing databases
+    from sqlalchemy import text, inspect as sa_inspect
+    inspector = sa_inspect(db.engine)
+    if inspector.has_table('applications'):
+        existing_cols = [c['name'] for c in inspector.get_columns('applications')]
+        if 'semantic_score' not in existing_cols:
+            with db.engine.connect() as conn:
+                conn.execute(text('ALTER TABLE applications ADD COLUMN semantic_score FLOAT DEFAULT 0.0'))
+                conn.commit()
     # Seed default HR account if none exists
     if not User.query.filter_by(role='hr').first():
         hashed = bcrypt.generate_password_hash('admin123').decode('utf-8')
@@ -182,6 +193,13 @@ def hr_delete_job(job_id):
     db.session.commit()
     return redirect(url_for('hr_jobs'))
 
+@app.route('/hr/screening')
+@login_required
+@hr_required
+def hr_screening_index():
+    jobs = JobPosting.query.filter_by(created_by=current_user.id).order_by(JobPosting.created_at.desc()).all()
+    return render_template('hr/screening_index.html', jobs=jobs)
+
 @app.route('/hr/jobs/<int:job_id>/results')
 @login_required
 @hr_required
@@ -189,6 +207,26 @@ def hr_screening_results(job_id):
     job = JobPosting.query.get_or_404(job_id)
     applications = Application.query.filter_by(job_id=job_id).order_by(Application.composite_score.desc()).all()
     return render_template('hr/screening_results.html', job=job, applications=applications)
+
+@app.route('/hr/jobs/<int:job_id>/export-csv')
+@login_required
+@hr_required
+def hr_export_csv(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    applications = Application.query.filter_by(job_id=job_id).order_by(Application.composite_score.desc()).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Rank', 'Name', 'Email', 'Composite Score (%)', 'Keyword Score (%)',
+                     'Fuzzy Score (%)', 'Text Similarity (%)', 'BERT Semantic (%)', 'Status', 'Applied Date'])
+    for i, appl in enumerate(applications, 1):
+        writer.writerow([i, appl.applicant.name, appl.applicant.email,
+                         appl.composite_score, appl.keyword_score, appl.fuzzy_score,
+                         appl.similarity_score, appl.semantic_score, appl.status,
+                         appl.applied_at.strftime('%Y-%m-%d')])
+    safe_title = ''.join(c if c.isalnum() else '_' for c in job.title)
+    filename = f"screening_{safe_title}_{job_id}.csv"
+    return Response(output.getvalue(), mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment;filename={filename}'})
 
 @app.route('/hr/applications/<int:app_id>/shortlist', methods=['POST'])
 @login_required
@@ -216,7 +254,11 @@ def hr_candidate_detail(candidate_id):
     all_apps = Application.query.filter_by(job_id=appl.job_id).order_by(Application.composite_score.desc()).all()
     rank = next((i + 1 for i, a in enumerate(all_apps) if a.id == appl.id), 1)
     total = len(all_apps)
-    return render_template('hr/candidate_detail.html', appl=appl, rank=rank, total=total)
+    kw_list = [k.strip() for k in appl.job.keywords.split(',') if k.strip()] if appl.job.keywords else []
+    kw_detail = keyword_breakdown(appl.resume_text or '', kw_list)
+    fz_detail = fuzzy_breakdown(appl.resume_text or '', kw_list)
+    return render_template('hr/candidate_detail.html', appl=appl, rank=rank, total=total,
+                           kw_detail=kw_detail, fz_detail=fz_detail)
 
 @app.route('/hr/candidates')
 @login_required
@@ -296,6 +338,7 @@ def applicant_apply(job_id):
             keyword_score=scores['keyword_score'],
             fuzzy_score=scores['fuzzy_score'],
             similarity_score=scores['similarity_score'],
+            semantic_score=scores['semantic_score'],
             composite_score=scores['composite_score'],
             status='submitted'
         )

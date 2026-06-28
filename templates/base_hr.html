@@ -31,7 +31,7 @@
                 <span class="nav-item-icon">&#x1F465;</span>
                 <span>Candidates</span>
             </a>
-            <a href="{{ url_for('hr_screening_results', job_id=1) }}" class="nav-item {% if request.endpoint == 'hr_screening_results' %}active{% endif %}">
+            <a href="{{ url_for('hr_screening_index') }}" class="nav-item {% if request.endpoint in ['hr_screening_index','hr_screening_results'] %}active{% endif %}">
                 <span class="nav-item-icon">&#x2728;</span>
                 <span>Screening Results</span>
             </a>

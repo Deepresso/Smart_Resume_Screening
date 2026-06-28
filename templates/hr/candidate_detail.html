@@ -3,108 +3,182 @@
 {% block content %}
 <div class="page-header">
     <div style="display:flex;align-items:center;gap:12px;">
-        <a href="{{ url_for('hr_screening_results', job_id=1) }}" class="btn btn-outline btn-sm">&larr; Applicant Profile — Tan Wei Jian</a>
+        <a href="{{ url_for('hr_screening_results', job_id=appl.job_id) }}" class="btn btn-outline btn-sm">&larr; Back to Results</a>
+        <div class="page-title">{{ appl.applicant.name }}</div>
     </div>
     <div class="header-actions">
-        <button class="btn btn-outline">Download Resume</button>
-        <button class="btn btn-success">&#x2713; Shortlist Candidate</button>
+        <form method="POST" action="{{ url_for('hr_shortlist_application', app_id=appl.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-success">&#x2713; Shortlist</button>
+        </form>
+        <form method="POST" action="{{ url_for('hr_reject_application', app_id=appl.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-danger">&#x2715; Reject</button>
+        </form>
     </div>
 </div>
 
 <div class="grid-2" style="align-items:start;">
-    <!-- Left: Resume Preview -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">Resume Preview</div>
-            <span class="stat-badge badge-blue">PDF · Uploaded 13 Apr 2026</span>
+            <div class="card-title">Extracted Resume Text</div>
+            <span class="stat-badge badge-blue">{{ appl.resume_path.rsplit('.', 1)[1].upper() if appl.resume_path else 'FILE' }}</span>
         </div>
         <div class="card-body">
-            <div class="resume-preview">
-                <div class="resume-name">Tan Wei Jian</div>
-                <div class="resume-contact">tanweijian@email.com · +60 12-345 6789 · Penang, Malaysia · linkedin.com/in/tanweijian</div>
-
-                <div class="resume-section-title">Professional Summary</div>
-                <p>Final year Software Engineering student with hands-on experience in Python, Flask and machine learning. Passionate about building scalable web applications and intelligent systems. Strong background in NLP and data processing pipelines.</p>
-
-                <div class="resume-section-title">Technical Skills</div>
-                <div class="kw-container" style="gap:6px;">
-                    <span class="skill-tag">Python</span><span class="skill-tag">Flask</span><span class="skill-tag">NLP</span>
-                    <span class="skill-tag">Machine Learning</span><span class="skill-tag">MySQL</span><span class="skill-tag">HTML/CSS</span>
-                    <span class="skill-tag">JavaScript</span><span class="skill-tag">TF-IDF</span><span class="skill-tag">scikit-learn</span><span class="skill-tag">Git</span>
-                </div>
-
-                <div class="resume-section-title">Education</div>
-                <p><strong>Bachelor in Software Engineering (Hons)</strong><br>
-                UOW Malaysia KDU Penang University College · Jan 2023 – Present · CGPA 3.7</p>
-
-                <div class="resume-section-title">Experience</div>
-                <p><strong>Software Developer Intern</strong> · TechCorp Sdn Bhd<br>
-                Jun 2025 – Sep 2025 · Developed REST APIs using Flask and Python. Implemented data pipelines for real-time analytics dashboards.</p>
-            </div>
+            <div style="white-space:pre-wrap;font-size:12px;line-height:1.6;max-height:500px;overflow-y:auto;font-family:monospace;background:#f8fafc;border-radius:6px;padding:12px;">{{ appl.resume_text or 'No resume text extracted.' }}</div>
+            {% if appl.cover_letter %}
+            <div class="divider" style="margin:16px 0;"></div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px;">COVER LETTER</div>
+            <p style="font-size:13px;line-height:1.6;">{{ appl.cover_letter }}</p>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Right: Score + Info -->
     <div style="display:flex;flex-direction:column;gap:16px;">
-        <!-- Candidate Info -->
         <div class="card">
             <div class="card-body">
                 <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-                    <div class="cand-avatar" style="background:#3b5bdb;width:48px;height:48px;font-size:16px;">TW</div>
+                    <div class="cand-avatar" style="background:var(--blue);width:48px;height:48px;font-size:16px;">{{ appl.applicant.name[:2].upper() }}</div>
                     <div>
-                        <div style="font-size:16px;font-weight:800;">Tan Wei Jian</div>
-                        <div class="text-muted text-sm">tanweijian@email.com</div>
+                        <div style="font-size:16px;font-weight:800;">{{ appl.applicant.name }}</div>
+                        <div class="text-muted text-sm">{{ appl.applicant.email }}</div>
                     </div>
                 </div>
                 <div class="divider"></div>
                 <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
-                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied For</span><strong>Software Engineer</strong></div>
-                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied On</span><strong>13 Apr 2026</strong></div>
-                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Rank</span><strong>#1 of 84</strong></div>
-                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Status</span><span class="status status-shortlisted">Shortlisted</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied For</span><strong>{{ appl.job.title }}</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Applied On</span><strong>{{ appl.applied_at.strftime('%d %b %Y') }}</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Rank</span><strong>#{{ rank }} of {{ total }}</strong></div>
+                    <div style="display:flex;justify-content:space-between;"><span class="text-muted">Status</span><span class="status status-{{ appl.status }}">{{ appl.status | capitalize }}</span></div>
                 </div>
                 <div class="divider"></div>
                 <div style="display:flex;gap:10px;">
-                    <button class="btn btn-success" style="flex:1;">&#x2713; Shortlist</button>
-                    <button class="btn btn-danger" style="flex:1;">&#x2715; Reject</button>
+                    <form method="POST" action="{{ url_for('hr_shortlist_application', app_id=appl.id) }}" style="flex:1;">
+                        <button type="submit" class="btn btn-success" style="width:100%;">&#x2713; Shortlist</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('hr_reject_application', app_id=appl.id) }}" style="flex:1;">
+                        <button type="submit" class="btn btn-danger" style="width:100%;">&#x2715; Reject</button>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <!-- Score Breakdown -->
         <div class="card">
-            <div class="card-header"><div class="card-title">Screening Score Breakdown</div></div>
+            <div class="card-header"><div class="card-title">Score Breakdown</div></div>
             <div class="card-body">
                 <div style="text-align:center;margin-bottom:20px;">
-                    <div class="score-big">91.4%</div>
+                    <div class="score-big">{{ appl.composite_score }}%</div>
                     <div class="score-label">Composite Relevance Score</div>
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#3b5bdb;"></span>Keyword Matching</div>
-                    <div class="score-pct" style="color:#3b5bdb;">88%</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (30%)</div>
+                    <div class="score-pct" style="color:var(--blue);">{{ appl.keyword_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
-                    <div class="progress-fill fill-blue" style="width:88%;"></div>
+                    <div class="progress-fill fill-blue" style="width:{{ appl.keyword_score }}%;"></div>
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching</div>
-                    <div class="score-pct" style="color:#7c3aed;">92%</div>
+                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (25%)</div>
+                    <div class="score-pct" style="color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
-                    <div class="progress-fill" style="width:92%;background:#7c3aed;"></div>
+                    <div class="progress-fill" style="width:{{ appl.fuzzy_score }}%;background:#7c3aed;"></div>
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (TF-IDF)</div>
-                    <div class="score-pct" style="color:var(--green);">94%</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (25%)</div>
+                    <div class="score-pct" style="color:var(--green);">{{ appl.similarity_score }}%</div>
+                </div>
+                <div class="progress" style="margin-bottom:14px;">
+                    <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-name"><span class="score-dot" style="background:#0ea5e9;"></span>BERT Semantic (20%)</div>
+                    <div class="score-pct" style="color:#0ea5e9;">{{ appl.semantic_score }}%</div>
                 </div>
                 <div class="progress">
-                    <div class="progress-fill fill-green" style="width:94%;"></div>
+                    <div class="progress-fill" style="width:{{ appl.semantic_score }}%;background:#0ea5e9;"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if kw_detail %}
+<div class="card" style="margin-top:20px;">
+    <div class="card-header"><div class="card-title">Detailed Score Analysis</div><span class="text-muted text-sm">Why this candidate received their scores</span></div>
+    <div class="card-body">
+
+        <!-- Keyword Matching Breakdown -->
+        <div style="margin-bottom:20px;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x1F50D; Keyword Matching &mdash; {{ appl.keyword_score }}% (40% of score)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                {% for item in kw_detail %}
+                {% if item.found %}
+                <span style="background:#dcfce7;color:#166534;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;">&#x2713; {{ item.kw }}</span>
+                {% else %}
+                <span style="background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;">&#x2715; {{ item.kw }}</span>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div class="text-muted text-sm">
+                <strong>{{ kw_detail | selectattr('found') | list | length }}</strong> of <strong>{{ kw_detail | length }}</strong> keywords found.
+                {% set missing = kw_detail | rejectattr('found') | list %}
+                {% if missing %}
+                Missing: {{ missing | map(attribute='kw') | join(', ') }}.
+                {% else %}
+                All required keywords are present.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Fuzzy Matching Breakdown -->
+        <div style="margin:20px 0;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x270F;&#xFE0F; Fuzzy Matching &mdash; {{ appl.fuzzy_score }}% (30% of score)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:10px;">
+                {% for item in fz_detail %}
+                <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:12px;font-weight:600;">{{ item.kw }}</span>
+                        <span style="font-size:11px;font-weight:700;color:{% if item.score >= 80 %}var(--green){% elif item.score >= 60 %}var(--orange){% else %}var(--red){% endif %};">{{ item.score }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-fill" style="width:{{ item.score }}%;background:{% if item.score >= 80 %}var(--green){% elif item.score >= 60 %}var(--orange){% else %}var(--red){% endif %};"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-muted text-sm">
+                Fuzzy matching detects similar words, abbreviations, and spelling variations.
+                <strong style="color:var(--green);">&#x25CF; &ge;80%</strong> strong match &nbsp;
+                <strong style="color:var(--orange);">&#x25CF; 60&ndash;79%</strong> partial match &nbsp;
+                <strong style="color:var(--red);">&#x25CF; &lt;60%</strong> weak match
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Text Similarity Explanation -->
+        <div style="margin-top:20px;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (30% of score)</div>
+            <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
+                {% if appl.similarity_score >= 80 %}
+                <span style="color:var(--green);font-weight:700;">Excellent alignment.</span> The resume's overall language, terminology, and topics closely match the job description. The candidate's background appears highly relevant to this role.
+                {% elif appl.similarity_score >= 60 %}
+                <span style="color:var(--orange);font-weight:700;">Moderate alignment.</span> The resume covers some relevant topics but there are gaps in key areas. The candidate may have a partially matching background.
+                {% elif appl.similarity_score >= 40 %}
+                <span style="color:var(--orange);font-weight:700;">Low-moderate alignment.</span> Limited thematic overlap between the resume and job description. The candidate's experience may not directly match this role's requirements.
+                {% else %}
+                <span style="color:var(--red);font-weight:700;">Poor alignment.</span> The resume's language and content differ significantly from the job description. This candidate's background does not appear to match this role.
+                {% endif %}
+                <br><span class="text-muted" style="font-size:12px;">This score is calculated using TF-IDF vectorisation and cosine similarity across the full text of both documents.</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
 {% endblock %}
