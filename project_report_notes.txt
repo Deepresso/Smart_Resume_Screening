@@ -631,7 +631,20 @@ Known limitation:
     files should be stored in cloud storage (e.g. AWS S3 or Cloudinary).
     For FYP demo purposes this is acceptable.
   - The BERT model (all-MiniLM-L6-v2, ~90MB) is downloaded from HuggingFace
-    on first resume submission. Subsequent submissions use the cached model.
+    during the build phase (see buildCommand in render.yaml) to avoid
+    downloading it at request time. The model is cached in memory after first
+    load; subsequent submissions are fast.
+
+Worker timeout fix (gunicorn):
+  - Default gunicorn timeout is 30 seconds. Loading the BERT model (~500MB
+    in memory with PyTorch) on the first resume submission exceeded this.
+  - Fix: gunicorn timeout increased to 120 seconds in Procfile:
+      web: gunicorn app:app --timeout 120 --workers 1
+  - Fix: model pre-downloaded during build phase in render.yaml:
+      buildCommand: pip install -r requirements.txt && python -c
+      "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+  - --workers 1 ensures only one worker is spawned, avoiding RAM exhaustion
+    on Render's free tier (512MB total — PyTorch alone uses ~300MB).
 
 gunicorn:
   - Gunicorn is a production-grade WSGI server for Python.
