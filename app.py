@@ -10,7 +10,8 @@ load_dotenv()
 from flask import Flask, render_template, redirect, url_for, request, flash, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from flask_mail import Mail, Message
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SGMail
 from werkzeug.utils import secure_filename
 from models import db, User, JobPosting, Application
 from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown
@@ -27,13 +28,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 
-app.config['MAIL_SERVER']   = 'smtp.gmail.com'
-app.config['MAIL_PORT']     = 587
-app.config['MAIL_USE_TLS']  = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-
-mail = Mail(app)
+SENDGRID_API_KEY  = os.environ.get('SENDGRID_API_KEY')
+MAIL_SENDER_EMAIL = os.environ.get('MAIL_USERNAME', 'resumatch.fyp@gmail.com')
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
@@ -51,12 +47,19 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-def send_email_async(msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-        except Exception as e:
-            app.logger.error(f'Mail send failed: {e}')
+def send_email_async(to_email, subject, html_content, plain_content):
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        message = SGMail(
+            from_email=f'Resumatch <{MAIL_SENDER_EMAIL}>',
+            to_emails=to_email,
+            subject=subject,
+            plain_text_content=plain_content,
+            html_content=html_content
+        )
+        sg.send(message)
+    except Exception as e:
+        app.logger.error(f'SendGrid mail failed: {e}')
 
 def hr_required(f):
     @wraps(f)
@@ -165,10 +168,7 @@ def register():
                           postcode=postcode, state=state, is_verified=False, verify_code=code)
             db.session.add(user)
             db.session.commit()
-            msg = Message('Your SmartResume Verification Code',
-                          sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[email])
-            msg.body = f'Hi {first_name},\n\nYour SmartResume verification code is: {code}\n\nEnter this code when you log in to activate your account.\n\nSmartResume - UOW Malaysia KDU'
-            msg.html = f"""
+            html = f"""
             <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
                 <h2 style="color:#1e293b;">Verify your account</h2>
                 <p>Hi {first_name},</p>
@@ -179,7 +179,8 @@ def register():
                 <p>Enter this code on the verification page when you log in to activate your account.</p>
                 <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
             </div>"""
-            threading.Thread(target=send_email_async, args=(msg,), daemon=True).start()
+            plain = f'Hi {first_name}, your SmartResume verification code is: {code}'
+            threading.Thread(target=send_email_async, args=(email, 'Your SmartResume Verification Code', html, plain), daemon=True).start()
             session['registered_email'] = email
             return redirect(url_for('register_success'))
     return render_template('auth/register.html')
@@ -224,10 +225,7 @@ def resend_code():
     code = str(random.randint(1000, 9999))
     user.verify_code = code
     db.session.commit()
-    msg = Message('Your SmartResume Verification Code',
-                  sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[user.email])
-    msg.body = f'Your new SmartResume verification code is: {code}'
-    msg.html = f"""
+    html = f"""
     <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
         <h2 style="color:#1e293b;">New Verification Code</h2>
         <p>Your new SmartResume verification code is:</p>
@@ -236,7 +234,8 @@ def resend_code():
         </div>
         <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
     </div>"""
-    threading.Thread(target=send_email_async, args=(msg,), daemon=True).start()
+    plain = f'Your new SmartResume verification code is: {code}'
+    threading.Thread(target=send_email_async, args=(user.email, 'Your SmartResume Verification Code', html, plain), daemon=True).start()
     flash('A new code has been sent to your email.')
     return redirect(url_for('verify'))
 
