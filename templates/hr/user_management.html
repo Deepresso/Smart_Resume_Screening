@@ -54,8 +54,7 @@
                         <div style="display:flex;gap:6px;">
                             <a href="{{ url_for('hr_edit_user', user_id=user.id) }}" class="btn btn-outline btn-sm">Edit</a>
                             {% if user.role != 'hr' %}
-                            <form method="POST" action="{{ url_for('hr_delete_user', user_id=user.id) }}"
-                                  onsubmit="return confirm('Delete {{ user.name }}? This also removes all their applications.')">
+                            <form method="POST" action="{{ url_for('hr_delete_user', user_id=user.id) }}">
                                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                             </form>
                             {% else %}
