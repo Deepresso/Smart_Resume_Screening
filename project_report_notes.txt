@@ -500,7 +500,57 @@ Why applicant-only registration?
 
 
 --------------------------------------------------------------------------------
-15. DEPLOYMENT
+15. EMAIL VERIFICATION SYSTEM
+--------------------------------------------------------------------------------
+Library     : Flask-Mail 0.10.0
+SMTP Server : Gmail (smtp.gmail.com, port 587, TLS)
+Sender      : resumatch.fyp@gmail.com (dedicated project email)
+
+Registration flow with email verification:
+  1. Applicant fills in the registration form (name, email, phone, address, password)
+  2. System validates Malaysian phone format using regex: ^(\+?60|0)1[0-9]\d{7,8}$
+     - Accepted: 0123456789, 01234567890, +60123456789
+     - Rejected: anything that doesn't match Malaysian mobile number format
+  3. A random 4-digit code is generated (random.randint(1000, 9999))
+  4. The code is stored in the users.verify_code column
+  5. Account is saved with is_verified=False (blocked from login)
+  6. A branded HTML email is sent to the applicant's email address
+  7. Applicant is redirected to the /verify page
+
+Verification page (/verify):
+  - Shows the email address the code was sent to
+  - Single 4-digit numeric input (auto-filters non-digits via JavaScript)
+  - If code matches users.verify_code: sets is_verified=True, clears code, logs in
+  - If code is wrong: shows error, lets them try again
+  - Resend Code button: generates a new code, saves to DB, sends new email
+
+Login guard:
+  - On login, if is_verified=False: redirects to /verify instead of logging in
+  - Session stores pending_verify_id to identify which user is verifying
+
+Existing accounts (HR admin, pre-migration users):
+  - Auto-migration adds is_verified column with DEFAULT TRUE (PostgreSQL) or
+    DEFAULT 1 (SQLite), so all existing accounts are automatically verified
+    and not blocked from logging in
+
+New profile fields added to users table:
+  - phone       VARCHAR(20)   Malaysian mobile number
+  - address1    VARCHAR(200)  Address line 1 (required)
+  - address2    VARCHAR(200)  Address line 2 (optional)
+  - postcode    VARCHAR(10)   5-digit Malaysian postcode
+  - state       VARCHAR(50)   Malaysian state (dropdown)
+  - is_verified BOOLEAN       Whether email has been verified
+  - verify_code VARCHAR(6)    Temporary 4-digit verification code
+
+Security note:
+  - Gmail App Password used instead of account password (Google security policy)
+  - Credentials stored in environment variables, never hardcoded in source code
+  - .env file used for local development (excluded from git via .gitignore)
+  - Render environment variables used for production
+
+
+--------------------------------------------------------------------------------
+16. DEPLOYMENT
 --------------------------------------------------------------------------------
 Platform    : Render (render.com)
 Repository  : https://github.com/Deepresso/Smart_Resume_Screening

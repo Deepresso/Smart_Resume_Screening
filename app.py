@@ -2,12 +2,19 @@ import os
 from functools import wraps
 import csv
 import io
-from flask import Flask, render_template, redirect, url_for, request, flash, Response
+import random
+import re
+from dotenv import load_dotenv
+load_dotenv()
+from flask import Flask, render_template, redirect, url_for, request, flash, Response, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
+from flask_mail import Mail, Message
 from werkzeug.utils import secure_filename
 from models import db, User, JobPosting, Application
 from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown
+
+MY_PHONE_RE = re.compile(r'^(\+?60|0)1[0-9]\d{7,8}$')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -17,6 +24,14 @@ if _db_url.startswith('postgres://'):
     _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app.config['MAIL_SERVER']   = 'smtp.gmail.com'
+app.config['MAIL_PORT']     = 587
+app.config['MAIL_USE_TLS']  = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+mail = Mail(app)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
 ALLOWED_EXTENSIONS = {'pdf', 'docx'}
@@ -52,19 +67,40 @@ def applicant_required(f):
 
 with app.app_context():
     db.create_all()
-    # Auto-migrate: add semantic_score column to existing databases
     from sqlalchemy import text, inspect as sa_inspect
     inspector = sa_inspect(db.engine)
+    dialect = db.engine.dialect.name  # 'sqlite' or 'postgresql'
+    bool_true = 'TRUE' if dialect == 'postgresql' else '1'
+
     if inspector.has_table('applications'):
-        existing_cols = [c['name'] for c in inspector.get_columns('applications')]
-        if 'semantic_score' not in existing_cols:
+        existing = [c['name'] for c in inspector.get_columns('applications')]
+        if 'semantic_score' not in existing:
             with db.engine.connect() as conn:
                 conn.execute(text('ALTER TABLE applications ADD COLUMN semantic_score FLOAT DEFAULT 0.0'))
                 conn.commit()
+
+    if inspector.has_table('users'):
+        existing = [c['name'] for c in inspector.get_columns('users')]
+        new_cols = {
+            'phone':       'VARCHAR(20)',
+            'address1':    'VARCHAR(200)',
+            'address2':    'VARCHAR(200)',
+            'postcode':    'VARCHAR(10)',
+            'state':       'VARCHAR(50)',
+            'verify_code': 'VARCHAR(6)',
+            'is_verified': f'BOOLEAN DEFAULT {bool_true}',
+        }
+        with db.engine.connect() as conn:
+            for col, col_type in new_cols.items():
+                if col not in existing:
+                    conn.execute(text(f'ALTER TABLE users ADD COLUMN {col} {col_type}'))
+            conn.commit()
+
     # Seed default HR account if none exists
     if not User.query.filter_by(role='hr').first():
         hashed = bcrypt.generate_password_hash('admin123').decode('utf-8')
-        hr = User(name='HR Admin', email='admin@smartresume.com', password=hashed, role='hr')
+        hr = User(name='HR Admin', email='admin@smartresume.com', password=hashed,
+                  role='hr', is_verified=True)
         db.session.add(hr)
         db.session.commit()
 
@@ -80,6 +116,10 @@ def login():
         password = request.form.get('password', '')
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password, password):
+            if not user.is_verified:
+                session['pending_verify_id'] = user.id
+                flash('Please verify your email before logging in.')
+                return redirect(url_for('verify'))
             login_user(user)
             return redirect(url_for('hr_dashboard') if user.role == 'hr' else url_for('applicant_dashboard'))
         flash('Invalid email or password.')
@@ -91,22 +131,100 @@ def register():
         first_name = request.form.get('first_name', '').strip()
         last_name  = request.form.get('last_name', '').strip()
         email      = request.form.get('email', '').strip()
+        phone      = request.form.get('phone', '').strip()
+        address1   = request.form.get('address1', '').strip()
+        address2   = request.form.get('address2', '').strip()
+        postcode   = request.form.get('postcode', '').strip()
+        state      = request.form.get('state', '').strip()
         password   = request.form.get('password', '')
         confirm    = request.form.get('confirm_password', '')
-        if not all([first_name, last_name, email, password]):
+        if not all([first_name, last_name, email, phone, address1, postcode, state, password]):
             flash('Please fill in all required fields.')
+        elif not MY_PHONE_RE.match(phone):
+            flash('Invalid phone number. Use Malaysian format e.g. 0123456789 or +60123456789.')
         elif password != confirm:
             flash('Passwords do not match.')
         elif User.query.filter_by(email=email).first():
             flash('An account with this email already exists.')
         else:
+            code   = str(random.randint(1000, 9999))
             hashed = bcrypt.generate_password_hash(password).decode('utf-8')
-            user = User(name=f'{first_name} {last_name}', email=email, password=hashed, role='applicant')
+            user   = User(name=f'{first_name} {last_name}', email=email, password=hashed,
+                          role='applicant', phone=phone, address1=address1, address2=address2,
+                          postcode=postcode, state=state, is_verified=False, verify_code=code)
             db.session.add(user)
             db.session.commit()
-            login_user(user)
-            return redirect(url_for('applicant_dashboard'))
+            try:
+                msg = Message('Your SmartResume Verification Code',
+                              sender=app.config['MAIL_USERNAME'], recipients=[email])
+                msg.html = f"""
+                <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
+                    <h2 style="color:#1e293b;">Verify your account</h2>
+                    <p>Hi {first_name},</p>
+                    <p>Your SmartResume verification code is:</p>
+                    <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
+                        <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
+                    </div>
+                    <p>Enter this code on the verification page to activate your account.</p>
+                    <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
+                </div>"""
+                mail.send(msg)
+            except Exception:
+                flash('Account created but we could not send the verification email. Use Resend Code.')
+            session['pending_verify_id'] = user.id
+            return redirect(url_for('verify'))
     return render_template('auth/register.html')
+
+@app.route('/verify', methods=['GET', 'POST'])
+def verify():
+    user_id = session.get('pending_verify_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    user = User.query.get(user_id)
+    if not user:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        entered = request.form.get('code', '').strip()
+        if entered == user.verify_code:
+            user.is_verified = True
+            user.verify_code  = None
+            db.session.commit()
+            session.pop('pending_verify_id', None)
+            login_user(user)
+            flash('Email verified! Welcome to SmartResume.')
+            return redirect(url_for('applicant_dashboard'))
+        else:
+            flash('Incorrect code. Please try again.')
+    return render_template('auth/verify.html', email=user.email)
+
+@app.route('/resend-code', methods=['POST'])
+def resend_code():
+    user_id = session.get('pending_verify_id')
+    if not user_id:
+        return redirect(url_for('login'))
+    user = User.query.get(user_id)
+    if not user:
+        return redirect(url_for('login'))
+    code = str(random.randint(1000, 9999))
+    user.verify_code = code
+    db.session.commit()
+    try:
+        msg = Message('Your SmartResume Verification Code',
+                      sender=app.config['MAIL_USERNAME'], recipients=[user.email])
+        msg.html = f"""
+        <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
+            <h2 style="color:#1e293b;">New Verification Code</h2>
+            <p>Your new SmartResume verification code is:</p>
+            <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
+                <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
+            </div>
+            <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
+        </div>"""
+        mail.send(msg)
+        flash('A new code has been sent to your email.')
+    except Exception:
+        flash('Failed to send email. Please try again.')
+    return redirect(url_for('verify'))
 
 @app.route('/logout')
 @login_required

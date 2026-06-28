@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account — SmartResume</title>
+    <title>Create Account &mdash; SmartResume</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -25,7 +25,7 @@
                 <div class="auth-step-num">1</div>
                 <div>
                     <div class="auth-step-title">Create your account</div>
-                    <div class="auth-step-desc">Fill in your name, email and password</div>
+                    <div class="auth-step-desc">Fill in your details and verify your email</div>
                 </div>
             </div>
             <div class="auth-step">
@@ -45,8 +45,8 @@
         </div>
     </div>
 
-    <div class="auth-right">
-        <div class="auth-form-box">
+    <div class="auth-right" style="overflow-y:auto;">
+        <div class="auth-form-box" style="max-width:480px;">
             <div class="auth-tabs">
                 <a href="{{ url_for('login') }}" class="auth-tab">Sign In</a>
                 <div class="auth-tab active">Create Account</div>
@@ -63,33 +63,88 @@
             {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('register') }}">
+            <form method="POST" action="{{ url_for('register') }}" novalidate>
+                <!-- Name -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>First Name</label>
+                        <label>First Name *</label>
                         <input type="text" name="first_name" placeholder="First name" required>
                     </div>
                     <div class="form-group">
-                        <label>Last Name</label>
+                        <label>Last Name *</label>
                         <input type="text" name="last_name" placeholder="Last name" required>
                     </div>
                 </div>
+
+                <!-- Email -->
                 <div class="form-group">
-                    <label>Email Address</label>
+                    <label>Email Address *</label>
                     <input type="email" name="email" placeholder="your@email.com" required>
+                </div>
+
+                <!-- Phone -->
+                <div class="form-group">
+                    <label>Mobile Phone *</label>
+                    <input type="tel" name="phone" id="phone" placeholder="e.g. 0123456789" required
+                           oninput="validatePhone(this)">
+                    <div id="phone-error" style="display:none;color:#b91c1c;font-size:11px;margin-top:4px;">
+                        Use Malaysian format: 0123456789 or +60123456789
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="form-group">
+                    <label>Address Line 1 *</label>
+                    <input type="text" name="address1" placeholder="House/Unit no., Street name" required>
+                </div>
+                <div class="form-group">
+                    <label>Address Line 2 <span style="color:var(--text-muted);font-weight:400;">(Optional)</span></label>
+                    <input type="text" name="address2" placeholder="Taman, Area, etc.">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Password</label>
+                        <label>Postcode *</label>
+                        <input type="text" name="postcode" placeholder="e.g. 10050" maxlength="5"
+                               pattern="\d{5}" title="5-digit postcode" required>
+                    </div>
+                    <div class="form-group">
+                        <label>State *</label>
+                        <select name="state" required style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:100%;background:#fff;">
+                            <option value="" disabled selected>Select state</option>
+                            <option>Johor</option>
+                            <option>Kedah</option>
+                            <option>Kelantan</option>
+                            <option>Melaka</option>
+                            <option>Negeri Sembilan</option>
+                            <option>Pahang</option>
+                            <option>Pulau Pinang</option>
+                            <option>Perak</option>
+                            <option>Perlis</option>
+                            <option>Sabah</option>
+                            <option>Sarawak</option>
+                            <option>Selangor</option>
+                            <option>Terengganu</option>
+                            <option>W.P. Kuala Lumpur</option>
+                            <option>W.P. Labuan</option>
+                            <option>W.P. Putrajaya</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Password *</label>
                         <input type="password" name="password" placeholder="Password" required>
                     </div>
                     <div class="form-group">
-                        <label>Confirm Password</label>
+                        <label>Confirm Password *</label>
                         <input type="password" name="confirm_password" placeholder="Confirm password" required>
                     </div>
                 </div>
+
                 <p class="auth-policy">By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
-                <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+                <button type="submit" id="submit-btn" class="btn btn-primary btn-full">Create Account &amp; Verify Email</button>
             </form>
 
             <div class="auth-footer">
@@ -98,5 +153,22 @@
         </div>
     </div>
 </div>
+<script>
+const MY_PHONE = /^(\+?60|0)1[0-9]\d{7,8}$/;
+function validatePhone(input) {
+    const err = document.getElementById('phone-error');
+    const btn = document.getElementById('submit-btn');
+    const val = input.value.replace(/\s|-/g, '');
+    if (val && !MY_PHONE.test(val)) {
+        err.style.display = 'block';
+        input.style.borderColor = '#b91c1c';
+        btn.disabled = true;
+    } else {
+        err.style.display = 'none';
+        input.style.borderColor = '';
+        btn.disabled = false;
+    }
+}
+</script>
 </body>
 </html>

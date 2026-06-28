@@ -7,11 +7,18 @@ db = SQLAlchemy()
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
-    id       = db.Column(db.Integer, primary_key=True)
-    name     = db.Column(db.String(100), nullable=False)
-    email    = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    role     = db.Column(db.String(20), nullable=False)  # 'hr' or 'applicant'
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(100), nullable=False)
+    email       = db.Column(db.String(150), unique=True, nullable=False)
+    password    = db.Column(db.String(255), nullable=False)
+    role        = db.Column(db.String(20), nullable=False)  # 'hr' or 'applicant'
+    phone       = db.Column(db.String(20))
+    address1    = db.Column(db.String(200))
+    address2    = db.Column(db.String(200))
+    postcode    = db.Column(db.String(10))
+    state       = db.Column(db.String(50))
+    is_verified = db.Column(db.Boolean, default=False)
+    verify_code = db.Column(db.String(6))
 
     job_postings = db.relationship('JobPosting', backref='creator', lazy=True)
     applications = db.relationship('Application', backref='applicant', lazy=True)
