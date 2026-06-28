@@ -4,6 +4,7 @@ import csv
 import io
 import random
 import re
+import threading
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, render_template, redirect, url_for, request, flash, Response, session
@@ -49,6 +50,13 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+def send_email_async(msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            app.logger.error(f'Mail send failed: {e}')
 
 def hr_required(f):
     @wraps(f)
@@ -157,24 +165,21 @@ def register():
                           postcode=postcode, state=state, is_verified=False, verify_code=code)
             db.session.add(user)
             db.session.commit()
-            try:
-                msg = Message('Your SmartResume Verification Code',
-                              sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[email])
-                msg.body = f'Hi {first_name},\n\nYour SmartResume verification code is: {code}\n\nEnter this code when you log in to activate your account.\n\nSmartResume - UOW Malaysia KDU'
-                msg.html = f"""
-                <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
-                    <h2 style="color:#1e293b;">Verify your account</h2>
-                    <p>Hi {first_name},</p>
-                    <p>Your SmartResume verification code is:</p>
-                    <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
-                        <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
-                    </div>
-                    <p>Enter this code on the verification page when you log in to activate your account.</p>
-                    <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
-                </div>"""
-                mail.send(msg)
-            except Exception as e:
-                app.logger.error(f'Mail send failed: {e}')
+            msg = Message('Your SmartResume Verification Code',
+                          sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[email])
+            msg.body = f'Hi {first_name},\n\nYour SmartResume verification code is: {code}\n\nEnter this code when you log in to activate your account.\n\nSmartResume - UOW Malaysia KDU'
+            msg.html = f"""
+            <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
+                <h2 style="color:#1e293b;">Verify your account</h2>
+                <p>Hi {first_name},</p>
+                <p>Your SmartResume verification code is:</p>
+                <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
+                    <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
+                </div>
+                <p>Enter this code on the verification page when you log in to activate your account.</p>
+                <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
+            </div>"""
+            threading.Thread(target=send_email_async, args=(msg,), daemon=True).start()
             session['registered_email'] = email
             return redirect(url_for('register_success'))
     return render_template('auth/register.html')
@@ -219,22 +224,20 @@ def resend_code():
     code = str(random.randint(1000, 9999))
     user.verify_code = code
     db.session.commit()
-    try:
-        msg = Message('Your SmartResume Verification Code',
-                      sender=app.config['MAIL_USERNAME'], recipients=[user.email])
-        msg.html = f"""
-        <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
-            <h2 style="color:#1e293b;">New Verification Code</h2>
-            <p>Your new SmartResume verification code is:</p>
-            <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
-                <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
-            </div>
-            <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
-        </div>"""
-        mail.send(msg)
-        flash('A new code has been sent to your email.')
-    except Exception:
-        flash('Failed to send email. Please try again.')
+    msg = Message('Your SmartResume Verification Code',
+                  sender=f'SmartResume <{app.config["MAIL_USERNAME"]}>', recipients=[user.email])
+    msg.body = f'Your new SmartResume verification code is: {code}'
+    msg.html = f"""
+    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;">
+        <h2 style="color:#1e293b;">New Verification Code</h2>
+        <p>Your new SmartResume verification code is:</p>
+        <div style="background:#fff7ed;border-radius:12px;padding:24px;text-align:center;margin:20px 0;">
+            <span style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ea580c;">{code}</span>
+        </div>
+        <p style="color:#64748b;font-size:12px;">SmartResume &mdash; UOW Malaysia KDU</p>
+    </div>"""
+    threading.Thread(target=send_email_async, args=(msg,), daemon=True).start()
+    flash('A new code has been sent to your email.')
     return redirect(url_for('verify'))
 
 @app.route('/logout')
