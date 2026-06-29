@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 _HF_API_KEY = os.environ.get('HUGGINGFACE_API_KEY')
-_HF_API_URL = 'https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2'
+_HF_API_URL = 'https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2'
 
 # Fallback: local model used when no HuggingFace API key is set (local dev only)
 _st_model = None
@@ -96,30 +96,33 @@ def semantic_score(resume_text, job_description):
 
 def _semantic_via_api(resume_text, job_description, api_key):
     """Call HuggingFace Inference API — no local model loaded, no RAM spike."""
-    import logging
-    try:
-        payload = {
-            'inputs': {
-                'source_sentence': job_description[:2000],
-                'sentences': [resume_text[:2000]],
-            },
-            'options': {'wait_for_model': True},
-        }
-        response = http_requests.post(
-            _HF_API_URL,
-            headers={'Authorization': f'Bearer {api_key}'},
-            json=payload,
-            timeout=60,
-        )
-        if response.status_code != 200:
-            logging.error(f'HuggingFace API error {response.status_code}: {response.text}')
-            return 0.0
-        result = response.json()
-        score = result[0] if isinstance(result, list) else 0.0
-        return round(max(0.0, float(score)) * 100, 2)
-    except Exception as e:
-        logging.error(f'HuggingFace API exception: {e}')
-        return 0.0
+    import logging, time
+    payload = {
+        'inputs': {
+            'source_sentence': job_description[:2000],
+            'sentences': [resume_text[:2000]],
+        },
+        'options': {'wait_for_model': True},
+    }
+    for attempt in range(2):
+        try:
+            response = http_requests.post(
+                _HF_API_URL,
+                headers={'Authorization': f'Bearer {api_key}'},
+                json=payload,
+                timeout=60,
+            )
+            if response.status_code != 200:
+                logging.error(f'HuggingFace API error {response.status_code}: {response.text}')
+                return 0.0
+            result = response.json()
+            score = result[0] if isinstance(result, list) else 0.0
+            return round(max(0.0, float(score)) * 100, 2)
+        except Exception as e:
+            logging.error(f'HuggingFace API exception (attempt {attempt + 1}): {e}')
+            if attempt == 0:
+                time.sleep(3)
+    return 0.0
 
 
 def _semantic_local(resume_text, job_description):
