@@ -96,6 +96,7 @@ def semantic_score(resume_text, job_description):
 
 def _semantic_via_api(resume_text, job_description, api_key):
     """Call HuggingFace Inference API — no local model loaded, no RAM spike."""
+    import logging
     try:
         payload = {
             'inputs': {
@@ -111,11 +112,13 @@ def _semantic_via_api(resume_text, job_description, api_key):
             timeout=60,
         )
         if response.status_code != 200:
+            logging.error(f'HuggingFace API error {response.status_code}: {response.text}')
             return 0.0
         result = response.json()
         score = result[0] if isinstance(result, list) else 0.0
         return round(max(0.0, float(score)) * 100, 2)
-    except Exception:
+    except Exception as e:
+        logging.error(f'HuggingFace API exception: {e}')
         return 0.0
 
 
