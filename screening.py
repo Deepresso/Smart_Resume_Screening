@@ -1,24 +1,9 @@
-import os
 import re
-import requests as http_requests
 import fitz  # PyMuPDF
 from docx import Document
 from rapidfuzz import fuzz
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-_HF_API_KEY = os.environ.get('HUGGINGFACE_API_KEY')
-_HF_API_URL = 'https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2'
-
-# Fallback: local model used when no HuggingFace API key is set (local dev only)
-_st_model = None
-
-def _get_st_model():
-    global _st_model
-    if _st_model is None:
-        from sentence_transformers import SentenceTransformer
-        _st_model = SentenceTransformer('all-MiniLM-L6-v2')
-    return _st_model
 
 
 # ── Text Extraction ──────────────────────────────────────────────────────────
@@ -80,63 +65,6 @@ def similarity_score(resume_text, job_description):
         return 0.0
 
 
-def semantic_score(resume_text, job_description):
-    """BERT semantic similarity via HuggingFace Inference API (production)
-    or local sentence-transformers model (local dev, no API key set)."""
-    if not resume_text or not job_description:
-        return 0.0
-
-    api_key = os.environ.get('HUGGINGFACE_API_KEY')
-
-    if api_key:
-        return _semantic_via_api(resume_text, job_description, api_key)
-    else:
-        return _semantic_local(resume_text, job_description)
-
-
-def _semantic_via_api(resume_text, job_description, api_key):
-    """Call HuggingFace Inference API — no local model loaded, no RAM spike."""
-    import logging, time
-    payload = {
-        'inputs': {
-            'source_sentence': job_description[:2000],
-            'sentences': [resume_text[:2000]],
-        },
-        'options': {'wait_for_model': True},
-    }
-    for attempt in range(2):
-        try:
-            response = http_requests.post(
-                _HF_API_URL,
-                headers={'Authorization': f'Bearer {api_key}'},
-                json=payload,
-                timeout=60,
-            )
-            if response.status_code != 200:
-                logging.error(f'HuggingFace API error {response.status_code}: {response.text}')
-                return 0.0
-            result = response.json()
-            score = result[0] if isinstance(result, list) else 0.0
-            return round(max(0.0, float(score)) * 100, 2)
-        except Exception as e:
-            logging.error(f'HuggingFace API exception (attempt {attempt + 1}): {e}')
-            if attempt == 0:
-                time.sleep(3)
-    return 0.0
-
-
-def _semantic_local(resume_text, job_description):
-    """Load model locally — only used when no HUGGINGFACE_API_KEY is set."""
-    try:
-        from sentence_transformers import util
-        model = _get_st_model()
-        embeddings = model.encode([resume_text, job_description], convert_to_tensor=True)
-        score = util.cos_sim(embeddings[0], embeddings[1]).item()
-        return round(max(0.0, float(score)) * 100, 2)
-    except Exception:
-        return 0.0
-
-
 def keyword_breakdown(resume_text, keywords):
     """Per-keyword found/not-found list."""
     resume_lower = resume_text.lower()
@@ -154,21 +82,20 @@ def fuzzy_breakdown(resume_text, keywords):
 
 
 def compute_scores(resume_text, job_description, keywords):
-    """Run all four algorithms and return individual + composite scores."""
+    """Run three NLP algorithms and return individual + composite scores."""
     kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if keywords else []
 
     kw  = keyword_score(resume_text, kw_list)
     fz  = fuzzy_score(resume_text, kw_list)
     sim = similarity_score(resume_text, job_description)
-    sem = semantic_score(resume_text, job_description)
 
-    # Weighted composite: keyword 30%, fuzzy 25%, TF-IDF 25%, BERT 20%
-    composite = round((kw * 0.30) + (fz * 0.25) + (sim * 0.25) + (sem * 0.20), 2)
+    # Weighted composite: keyword 40%, fuzzy 30%, TF-IDF 30%
+    composite = round((kw * 0.40) + (fz * 0.30) + (sim * 0.30), 2)
 
     return {
         'keyword_score':    kw,
         'fuzzy_score':      fz,
         'similarity_score': sim,
-        'semantic_score':   sem,
+        'semantic_score':   0.0,
         'composite_score':  composite,
     }

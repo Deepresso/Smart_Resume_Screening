@@ -70,7 +70,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (30%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (40%)</div>
                     <div class="score-pct" style="color:var(--blue);">{{ appl.keyword_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (25%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (30%)</div>
                     <div class="score-pct" style="color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -86,19 +86,11 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (25%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (30%)</div>
                     <div class="score-pct" style="color:var(--green);">{{ appl.similarity_score }}%</div>
                 </div>
-                <div class="progress" style="margin-bottom:14px;">
-                    <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
-                </div>
-
-                <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#0ea5e9;"></span>BERT Semantic (20%)</div>
-                    <div class="score-pct" style="color:#0ea5e9;">{{ appl.semantic_score }}%</div>
-                </div>
                 <div class="progress">
-                    <div class="progress-fill" style="width:{{ appl.semantic_score }}%;background:#0ea5e9;"></div>
+                    <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
                 </div>
             </div>
         </div>

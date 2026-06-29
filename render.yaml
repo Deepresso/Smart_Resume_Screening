@@ -2,7 +2,7 @@ services:
   - type: web
     name: smart-resume-screening
     env: python
-    buildCommand: pip install -r requirements.txt && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --timeout 120 --workers 1
     plan: free
     envVars:

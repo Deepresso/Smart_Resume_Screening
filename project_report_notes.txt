@@ -41,7 +41,7 @@ DOCX Extraction     : python-docx
 NLP - Keyword       : Plain Python string matching
 NLP - Fuzzy         : rapidfuzz (Levenshtein distance)
 NLP - TF-IDF        : scikit-learn (TfidfVectorizer + cosine_similarity)
-NLP - Semantic      : sentence-transformers (BERT model: all-MiniLM-L6-v2)
+NLP - Semantic      : Removed (was sentence-transformers BERT model — see Section 16 for reason)
 Frontend            : HTML5, CSS3 (custom design system), Vanilla JavaScript
 Templating Engine   : Jinja2 (built into Flask)
 
@@ -276,41 +276,28 @@ Strength  : Captures overall thematic alignment between documents
 Limitation: Treats words as independent tokens, ignores word meaning and context
 
 ------------------------------------
-8.4 BERT SEMANTIC SIMILARITY (Weight: 20%)
+8.4 COMPOSITE SCORE FORMULA (3 techniques)
 ------------------------------------
-Function: semantic_score(resume_text, job_description)
-Library  : sentence-transformers (model: all-MiniLM-L6-v2)
-
-How it works:
-  - A pre-trained BERT-based model (all-MiniLM-L6-v2) encodes both the
-    resume and job description into dense vector embeddings (384 dimensions).
-  - These embeddings capture the semantic meaning of the text, not just
-    the words used.
-  - Cosine similarity is computed between the two embedding vectors.
-  - The model is loaded lazily on first use and cached in memory.
-
-Example of what this catches that other techniques miss:
-  Job says: "Experience with web backend frameworks required"
-  Resume says: "Built REST APIs using Django and Flask"
-  - Keyword score: 0% (no matching keywords)
-  - TF-IDF score: low (different words)
-  - BERT score: high (understands Django/Flask = web backend framework)
-
-Strength  : Understands meaning, synonyms, and context
-            Distinguishes: "managed a team" ≈ "team leadership experience"
-Limitation: Slower than other techniques, larger memory footprint
-
-------------------------------------
-8.5 COMPOSITE SCORE FORMULA
-------------------------------------
-composite = (keyword x 0.30) + (fuzzy x 0.25) + (tfidf x 0.25) + (bert x 0.20)
+composite = (keyword x 0.40) + (fuzzy x 0.30) + (tfidf x 0.30)
 
 Rationale for weights:
-  - Keyword Matching gets the highest weight (30%) because exact keyword
-    presence is the most direct signal of qualification.
-  - Fuzzy and TF-IDF each get 25% as complementary surface-level techniques.
-  - BERT gets 20% as a deep understanding layer that adds semantic depth
-    without dominating, since it may score high even for loosely related text.
+  - Keyword Matching gets the highest weight (40%) because exact keyword
+    presence is the most direct signal of candidate qualification.
+  - Fuzzy and TF-IDF each get 30% as complementary surface-level techniques.
+
+Note — BERT semantic scoring was implemented and tested during development
+but removed from the final system due to deployment constraints:
+  - The sentence-transformers library (PyTorch-based) requires ~350MB RAM.
+  - Render's free tier only provides 512MB RAM total.
+  - Loading the BERT model during a request caused Linux OOM-killer to
+    send SIGKILL to the worker process (~36 seconds in), resulting in a
+    502 Bad Gateway error for the applicant.
+  - Multiple workarounds were attempted (HuggingFace Inference API via HTTP)
+    but Render's free tier showed intermittent DNS resolution failures for
+    external ML hosting services.
+  - Final decision: remove BERT and use the reliable 3-algorithm system.
+  - semantic_score column is retained in the database (always stores 0.0)
+    to avoid breaking existing data.
 
 All scores are stored in the database and displayed to HR on the
 Screening Results page, ranked from highest to lowest composite score.
@@ -452,17 +439,11 @@ Database Auto-Migration:
 --------------------------------------------------------------------------------
 13. SCORING WEIGHT EVOLUTION
 --------------------------------------------------------------------------------
-Initial design (3 techniques):
+Final system (3 techniques):
   Keyword 40%  +  Fuzzy 30%  +  TF-IDF 30%  =  100%
 
-After adding BERT (4 techniques):
-  Keyword 30%  +  Fuzzy 25%  +  TF-IDF 25%  +  BERT 20%  =  100%
-
-Reason for adjusting weights:
-  Adding BERT required reducing the weights of the other three techniques
-  proportionally while keeping keyword matching as the highest-weighted
-  signal, since exact keyword presence remains the most direct indicator
-  of candidate qualification for a specific role.
+Note: BERT (4th technique) was implemented and tested but removed due to
+Render free tier RAM constraints (see Section 8.4 for full explanation).
 
 
 --------------------------------------------------------------------------------

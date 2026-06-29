@@ -352,11 +352,11 @@ def hr_export_csv(job_id):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Rank', 'Name', 'Email', 'Composite Score (%)', 'Keyword Score (%)',
-                     'Fuzzy Score (%)', 'Text Similarity (%)', 'BERT Semantic (%)', 'Status', 'Applied Date'])
+                     'Fuzzy Score (%)', 'Text Similarity (%)', 'Status', 'Applied Date'])
     for i, appl in enumerate(applications, 1):
         writer.writerow([i, appl.applicant.name, appl.applicant.email,
                          appl.composite_score, appl.keyword_score, appl.fuzzy_score,
-                         appl.similarity_score, appl.semantic_score, appl.status,
+                         appl.similarity_score, appl.status,
                          appl.applied_at.strftime('%Y-%m-%d')])
     safe_title = ''.join(c if c.isalnum() else '_' for c in job.title)
     filename = f"screening_{safe_title}_{job_id}.csv"

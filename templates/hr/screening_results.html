@@ -7,7 +7,7 @@
             <a href="{{ url_for('hr_jobs') }}" class="btn btn-outline btn-sm">&larr; Back</a>
             <div class="page-title">Screening Results — {{ job.title }}</div>
         </div>
-        <div class="page-sub">{{ job.company }} · {{ applications | length }} resume{{ 's' if applications | length != 1 }} screened · 4 NLP techniques applied</div>
+        <div class="page-sub">{{ job.company }} · {{ applications | length }} resume{{ 's' if applications | length != 1 }} screened · 3 NLP techniques applied</div>
     </div>
     <div class="header-actions">
         <a href="{{ url_for('hr_export_csv', job_id=job.id) }}" class="btn btn-outline btn-sm">&#x2B07; Export CSV</a>
@@ -26,7 +26,6 @@
                     <th>Keyword</th>
                     <th>Fuzzy</th>
                     <th>Text Similarity</th>
-                    <th>Semantic</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -58,7 +57,6 @@
                     <td class="fw-700">{{ app.keyword_score }}%</td>
                     <td class="fw-700">{{ app.fuzzy_score }}%</td>
                     <td class="fw-700">{{ app.similarity_score }}%</td>
-                    <td class="fw-700">{{ app.semantic_score }}%</td>
                     <td>
                         <span class="status status-{{ app.status }}">{{ app.status | capitalize }}</span>
                     </td>
@@ -76,7 +74,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">
+                    <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
                         No applications yet for this job posting.
                     </td>
                 </tr>
@@ -85,10 +83,9 @@
         </table>
     </div>
     <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:20px;font-size:11px;color:var(--text-muted);">
-        <span><strong>KW</strong> = Keyword Matching (30%)</span>
-        <span><strong>FZ</strong> = Fuzzy Matching (25%)</span>
-        <span><strong>TS</strong> = TF-IDF Similarity (25%)</span>
-        <span><strong>SE</strong> = BERT Semantic (20%)</span>
+        <span><strong>KW</strong> = Keyword Matching (40%)</span>
+        <span><strong>FZ</strong> = Fuzzy Matching (30%)</span>
+        <span><strong>TS</strong> = TF-IDF Similarity (30%)</span>
         <span style="margin-left:auto;">
             <span style="color:var(--green);">&#9679;</span> &ge;80% Recommended &nbsp;
             <span style="color:var(--orange);">&#9679;</span> 60–79% In Review &nbsp;
