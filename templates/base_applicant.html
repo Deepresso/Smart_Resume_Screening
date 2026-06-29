@@ -8,7 +8,10 @@
 </head>
 <body>
 <div class="app-wrapper">
-    <aside class="sidebar">
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()">&#9776;</button>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="sidebar-brand-icon">&#x1F4CB;</div>
             <div>
@@ -51,5 +54,15 @@
         {% block content %}{% endblock %}
     </main>
 </div>
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+</script>
 </body>
 </html>

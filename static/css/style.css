@@ -408,10 +408,119 @@ tr:hover td { background: #fafafa; }
 .feedback-icon { font-size: 18px; flex-shrink: 0; }
 .feedback-text { font-size: 13px; line-height: 1.5; }
 
+/* ── Hamburger button (mobile only) ── */
+.hamburger {
+    display: none;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 200;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+}
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 99;
+}
+
+/* ── Tablet (601px – 900px): icon-only collapsed sidebar ── */
 @media (max-width: 900px) {
     .sidebar { width: 60px; }
-    .sidebar-brand-name, .sidebar-brand-sub, .nav-item span, .user-name, .user-role { display: none; }
-    .main-content { margin-left: 60px; }
+    .sidebar-brand-name, .sidebar-brand-sub, .nav-item > span:last-child,
+    .user-name, .user-role, .sidebar-section { display: none; }
+    .sidebar-brand { justify-content: center; padding: 20px 0; }
+    .nav-item { justify-content: center; padding: 10px 0; margin: 2px 6px; }
+    .sidebar-user { justify-content: center; padding: 12px 0; }
+    .main-content { margin-left: 60px; padding: 24px 20px; }
     .auth-left { display: none; }
     .stats-row { flex-wrap: wrap; }
+    .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ── Mobile (≤600px): hamburger overlay sidebar ── */
+@media (max-width: 600px) {
+    /* Show hamburger */
+    .hamburger { display: flex; }
+
+    /* Sidebar slides in from left as overlay */
+    .sidebar {
+        width: var(--sidebar-width);
+        transform: translateX(-240px);
+        transition: transform 0.25s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    /* Restore all sidebar text when open */
+    .sidebar-brand-name, .sidebar-brand-sub, .nav-item > span:last-child,
+    .user-name, .user-role, .sidebar-section { display: block; }
+    .sidebar-brand { justify-content: flex-start; padding: 20px 16px; }
+    .nav-item { justify-content: flex-start; padding: 9px 16px; margin: 1px 8px; }
+    .sidebar-user { justify-content: flex-start; padding: 12px 16px; }
+
+    /* Overlay backdrop */
+    .sidebar-overlay.open { display: block; }
+
+    /* Main content: no left margin, top padding for hamburger */
+    .main-content { margin-left: 0; padding: 62px 14px 24px; }
+
+    /* Page header stacks */
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .header-actions { width: 100%; flex-wrap: wrap; }
+
+    /* Stats: 2×2 grid */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card { padding: 12px 14px; gap: 10px; }
+    .stat-value { font-size: 18px; }
+    .stat-badge { display: none; }
+
+    /* All grids stack */
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .score-grid-3 { grid-template-columns: 1fr !important; }
+
+    /* Forms stack */
+    .form-row { flex-direction: column; gap: 0; }
+
+    /* Card padding */
+    .card-body { padding: 14px; }
+    .page-title { font-size: 17px; }
+    .score-big { font-size: 36px; }
+
+    /* Auth */
+    .auth-left { display: none; }
+    .auth-right { padding: 24px 16px; }
+    .auth-form-box { max-width: 100%; }
+
+    /* Tables: touch scroll */
+    .table-wrap { -webkit-overflow-scrolling: touch; }
+
+    /* Wizard steps wrap */
+    .wizard-steps { flex-wrap: wrap; gap: 8px; }
+    .wizard-divider { display: none; }
+
+    /* Timeline: horizontal scroll instead of overflow */
+    .timeline-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+    .timeline-scroll > div { min-width: 480px; }
+
+    /* Job grid */
+    .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Very small screens (≤380px) ── */
+@media (max-width: 380px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .main-content { padding: 60px 10px 24px; }
+    .card-body { padding: 12px 10px; }
+    .btn-sm { font-size: 11px; padding: 5px 8px; }
 }
