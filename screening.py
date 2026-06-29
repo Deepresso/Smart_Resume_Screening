@@ -1,10 +1,16 @@
+import os
 import re
+import requests as http_requests
 import fitz  # PyMuPDF
 from docx import Document
 from rapidfuzz import fuzz
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+_HF_API_KEY = os.environ.get('HUGGINGFACE_API_KEY')
+_HF_API_URL = 'https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2'
+
+# Fallback: local model used when no HuggingFace API key is set (local dev only)
 _st_model = None
 
 def _get_st_model():
@@ -75,9 +81,46 @@ def similarity_score(resume_text, job_description):
 
 
 def semantic_score(resume_text, job_description):
-    """BERT semantic similarity using sentence embeddings (all-MiniLM-L6-v2)."""
+    """BERT semantic similarity via HuggingFace Inference API (production)
+    or local sentence-transformers model (local dev, no API key set)."""
     if not resume_text or not job_description:
         return 0.0
+
+    api_key = os.environ.get('HUGGINGFACE_API_KEY')
+
+    if api_key:
+        return _semantic_via_api(resume_text, job_description, api_key)
+    else:
+        return _semantic_local(resume_text, job_description)
+
+
+def _semantic_via_api(resume_text, job_description, api_key):
+    """Call HuggingFace Inference API — no local model loaded, no RAM spike."""
+    try:
+        payload = {
+            'inputs': {
+                'source_sentence': job_description[:2000],
+                'sentences': [resume_text[:2000]],
+            },
+            'options': {'wait_for_model': True},
+        }
+        response = http_requests.post(
+            _HF_API_URL,
+            headers={'Authorization': f'Bearer {api_key}'},
+            json=payload,
+            timeout=60,
+        )
+        if response.status_code != 200:
+            return 0.0
+        result = response.json()
+        score = result[0] if isinstance(result, list) else 0.0
+        return round(max(0.0, float(score)) * 100, 2)
+    except Exception:
+        return 0.0
+
+
+def _semantic_local(resume_text, job_description):
+    """Load model locally — only used when no HUGGINGFACE_API_KEY is set."""
     try:
         from sentence_transformers import util
         model = _get_st_model()

@@ -635,16 +635,26 @@ Known limitation:
     downloading it at request time. The model is cached in memory after first
     load; subsequent submissions are fast.
 
-Worker timeout fix (gunicorn):
-  - Default gunicorn timeout is 30 seconds. Loading the BERT model (~500MB
-    in memory with PyTorch) on the first resume submission exceeded this.
-  - Fix: gunicorn timeout increased to 120 seconds in Procfile:
-      web: gunicorn app:app --timeout 120 --workers 1
-  - Fix: model pre-downloaded during build phase in render.yaml:
-      buildCommand: pip install -r requirements.txt && python -c
-      "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-  - --workers 1 ensures only one worker is spawned, avoiding RAM exhaustion
-    on Render's free tier (512MB total — PyTorch alone uses ~300MB).
+Worker timeout / OOM fix — HuggingFace Inference API:
+  - Root cause: PyTorch + BERT model loads ~350MB into RAM. Render free tier
+    has only 512MB total. Flask + other packages use ~150MB, so loading BERT
+    exhausts all available memory and Linux OOM-killer sends SIGKILL to the
+    worker process (~36 seconds in, regardless of gunicorn timeout setting).
+  - Fix: semantic_score() now calls HuggingFace Inference API (HTTP request)
+    instead of loading the model locally. The model runs on HuggingFace's
+    servers — zero RAM impact on Render. The local machine is unaffected.
+  - How it works in screening.py:
+      If HUGGINGFACE_API_KEY env var is set → calls HuggingFace API
+      If no API key (local dev without key) → falls back to local model
+  - API endpoint used:
+      POST https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2
+      Body: { "inputs": { "source_sentence": "...", "sentences": ["..."] } }
+      Returns: [cosine_similarity_score] — same model, same scores
+  - HuggingFace free tier: 1,000 API calls/month — sufficient for FYP demo
+  - Composite score weights unchanged (API returns identical scores to local):
+      Keyword 30%  +  Fuzzy 25%  +  TF-IDF 25%  +  BERT 20%  =  100%
+  - Environment variable required on Render: HUGGINGFACE_API_KEY = hf_...
+  - requests==2.32.4 added to requirements.txt for the HTTP API call
 
 gunicorn:
   - Gunicorn is a production-grade WSGI server for Python.
