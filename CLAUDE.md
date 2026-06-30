@@ -63,3 +63,23 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## 5. Project Report Notes (MANDATORY)
+
+**Every code change must update `project_report_notes.txt` in the same commit.**
+
+This file is used for FYP report writing. Missing an update means the report becomes inaccurate.
+
+What to update after ANY change:
+- New feature → add it under the relevant section (e.g. Section 9, 10)
+- Bug fix or workaround → add it under deployment/limitations or the relevant section
+- Removed feature → update or remove the old entry, note the reason
+- Changed weights, routes, logic → update the affected section
+- New file or dependency → add it to the tech stack or file structure section
+
+Rules:
+- Update the notes BEFORE or IN THE SAME COMMIT as the code change — never after.
+- If a section is now stale (e.g. references removed code), fix or delete it.
+- Never leave `project_report_notes.txt` describing behaviour that no longer exists.
