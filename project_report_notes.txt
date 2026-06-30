@@ -205,7 +205,11 @@ Upload Process:
 Text Extraction:
   - PDF files  : PyMuPDF (fitz) iterates through each page and concatenates
                  the text content.
-  - DOCX files : python-docx reads each paragraph and joins non-empty lines.
+  - DOCX files : python-docx reads all top-level paragraphs AND all table
+                 cell paragraphs (doc.tables → rows → cells → paragraphs).
+                 Both are needed because many DOCX resumes use tables for
+                 layout (skills tables, two-column sections). Extracting only
+                 doc.paragraphs caused 0 scores for table-heavy DOCX files.
 
 Duplicate prevention:
   - A check is performed before saving. If the applicant has already applied

@@ -26,7 +26,14 @@ def _from_pdf(filepath):
 
 def _from_docx(filepath):
     doc = Document(filepath)
-    return '\n'.join(p.text for p in doc.paragraphs if p.text.strip()).strip()
+    parts = [p.text for p in doc.paragraphs if p.text.strip()]
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    if p.text.strip():
+                        parts.append(p.text)
+    return '\n'.join(parts).strip()
 
 
 # ── NLP Scoring ──────────────────────────────────────────────────────────────
