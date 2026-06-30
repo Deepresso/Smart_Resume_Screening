@@ -232,6 +232,8 @@ tr:hover td { background: #fafafa; }
 .status-review::before { background: var(--orange); }
 .status-shortlisted { background: var(--green-bg); color: var(--green); }
 .status-shortlisted::before { background: var(--green); }
+.status-rejected { background: #fee2e2; color: var(--red); }
+.status-rejected::before { background: var(--red); }
 .status-submitted { background: #ffedd5; color: var(--blue); }
 .status-submitted::before { background: var(--blue); }
 .status-pending { background: var(--gray-bg); color: var(--text-muted); }

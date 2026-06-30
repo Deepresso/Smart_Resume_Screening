@@ -255,7 +255,8 @@ def hr_dashboard():
     shortlisted = Application.query.join(JobPosting).filter(JobPosting.created_by == current_user.id, Application.status == 'shortlisted').count()
     pending = Application.query.join(JobPosting).filter(JobPosting.created_by == current_user.id, Application.status == 'submitted').count()
     top_apps = Application.query.join(JobPosting).filter(JobPosting.created_by == current_user.id).order_by(Application.composite_score.desc()).limit(5).all()
-    return render_template('hr/dashboard.html', jobs=jobs, total_apps=total_apps, shortlisted=shortlisted, pending=pending, top_apps=top_apps)
+    pending_apps = Application.query.join(JobPosting).filter(JobPosting.created_by == current_user.id, Application.status == 'submitted').order_by(Application.applied_at.asc()).all()
+    return render_template('hr/dashboard.html', jobs=jobs, total_apps=total_apps, shortlisted=shortlisted, pending=pending, top_apps=top_apps, pending_apps=pending_apps)
 
 @app.route('/hr/jobs')
 @login_required

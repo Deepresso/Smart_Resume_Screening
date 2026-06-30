@@ -41,6 +41,36 @@
     </div>
 </div>
 
+<!-- Pending Review Notifications -->
+{% if pending_apps %}
+<div class="card" style="margin-bottom:20px;border-left:4px solid var(--orange);">
+    <div class="card-header" style="background:#fff7ed;border-radius:10px 10px 0 0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:18px;">&#x23F3;</span>
+            <div class="card-title" style="color:#9a3412;">Pending Review</div>
+            <span style="background:#ea580c;color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:4px;">{{ pending_apps | length }}</span>
+        </div>
+        <span style="font-size:12px;color:#78350f;">These applicants are waiting for a decision — shortlist or reject each one.</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        {% for app in pending_apps %}
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:{% if not loop.last %}1px solid var(--border){% else %}none{% endif %};">
+            <div class="cand-avatar" style="background:#ea580c;flex-shrink:0;">{{ app.applicant.name[:2].upper() }}</div>
+            <div style="flex:1;min-width:0;">
+                <div class="fw-700" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ app.applicant.name }}</div>
+                <div class="text-muted text-sm">Applied for <strong>{{ app.job.title }}</strong> · {{ app.applied_at.strftime('%d %b %Y') }}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:13px;font-weight:700;color:{% if app.composite_score >= 80 %}var(--green){% elif app.composite_score >= 60 %}var(--orange){% else %}var(--red){% endif %};">{{ app.composite_score }}%</div>
+                <div class="text-muted text-sm">match score</div>
+            </div>
+            <a href="{{ url_for('hr_candidate_detail', candidate_id=app.id) }}" class="btn btn-sm btn-primary" style="flex-shrink:0;">Review &rarr;</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class="grid-2">
     <!-- Job Postings -->
     <div class="card">

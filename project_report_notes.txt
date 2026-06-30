@@ -82,6 +82,9 @@ Smart_Resume_Screening/
   uploads/            - Uploaded resume files (PDF/DOCX)
   instance/
     smart_resume.db   - SQLite database file
+  sample_resumes/     - 20 sample resume .docx files for system testing (10 categories × 2 levels)
+  generate_sample_resumes.py  - Script that generated the 20 sample resumes (python-docx)
+  generate_resume_template.py - Script that generated static/downloads/resume_template.docx
 
 
 --------------------------------------------------------------------------------
@@ -310,6 +313,13 @@ Screening Results page, ranked from highest to lowest composite score.
 Dashboard:
   - Live count of total job postings, total applicants, shortlisted count,
     and pending applications.
+  - Pending Review notification panel: shown only when there are unreviewed
+    (status='submitted') applications. Displays each pending applicant with
+    their name, job applied for, apply date, match score, and a "Review →"
+    button that links directly to the candidate detail page. Ordered oldest
+    first (longest-waiting shown at top). Panel has an orange left border and
+    badge count to draw attention. Disappears automatically when all pending
+    applications have been actioned.
   - Table of all job postings with applicant counts.
   - Top 5 ranked applicants across all jobs.
 
@@ -375,6 +385,8 @@ My Applications:
     composite score.
   - Each application has a "View Details →" button linking to the full
     application detail page.
+  - Status badge colours: Shortlisted = green (.status-shortlisted),
+    Rejected = red (.status-rejected), Submitted = orange (.status-submitted).
 
 Application Detail:
   - Shows 3 NLP scores with progress bars: Keyword (40%), Fuzzy (30%), TF-IDF (30%).
@@ -696,6 +708,57 @@ Possible Future Improvements:
   6. Add a candidate comparison view to display two applicants side by side.
   7. Re-enable BERT semantic scoring on a higher-RAM production server.
   8. Add a feedback loop where HR shortlist/reject decisions train a future ML model.
+
+
+--------------------------------------------------------------------------------
+18. SAMPLE RESUMES FOR TESTING
+--------------------------------------------------------------------------------
+Location : sample_resumes/ (local folder, not deployed)
+Generated: generate_sample_resumes.py (python-docx library)
+Purpose  : 20 realistic .docx resumes for manual testing of the NLP scoring
+           system. Each resume targets a specific job category and seniority
+           level, allowing testers to verify that higher-scoring resumes
+           genuinely outrank weaker ones.
+
+Categories and files (10 categories × 2 seniority levels = 20 resumes):
+
+  No.  File                                            Candidate
+  01   01_software_engineer_junior_AhmadFaris.docx     Ahmad Faris bin Rosli
+  02   02_software_engineer_senior_LimWeiJian.docx     Lim Wei Jian
+  03   03_data_analyst_junior_NurulAin.docx            Nurul Ain binti Azman
+  04   04_data_analyst_senior_RajeshNair.docx          Rajesh Kumar Nair
+  05   05_ux_designer_junior_SitiNabilah.docx          Siti Nabilah binti Zulkifli
+  06   06_ux_designer_senior_KevinTan.docx             Kevin Tan Chee Seng
+  07   07_network_engineer_junior_MuhammadHaziq.docx   Muhammad Haziq bin Hamdan
+  08   08_network_engineer_senior_DavidChong.docx      David Chong Wai Kit
+  09   09_cybersecurity_analyst_junior_AmirulHakim.docx Amirul Hakim bin Saifuddin
+  10   10_cybersecurity_analyst_senior_PriyaMenon.docx  Priya Menon
+  11   11_ml_engineer_junior_TanJiaHui.docx            Tan Jia Hui
+  12   12_ml_engineer_senior_ChandraSekaran.docx       Dr. Chandra Sekaran
+  13   13_fullstack_developer_junior_NurIzzati.docx    Nur Izzati binti Hashim
+  14   14_fullstack_developer_senior_JasonLee.docx     Jason Lee Kok Weng
+  15   15_cloud_engineer_junior_Hafizuddin.docx        Hafizuddin bin Mohd Noor
+  16   16_cloud_engineer_senior_VincentYap.docx        Vincent Yap Boon Kiat
+  17   17_android_developer_junior_LuqmanulHakim.docx  Luqmanul Hakim bin Roslan
+  18   18_android_developer_senior_GraceOng.docx       Grace Ong Mei Ling
+  19   19_it_support_junior_MohamadSyafiq.docx         Mohamad Syafiq bin Ismail
+  20   20_it_support_senior_RathiKrishnaswamy.docx     Rathi Krishnaswamy
+
+Each resume follows the same structure as the downloadable resume template:
+  - Professional Summary (keyword-rich, role-specific)
+  - Technical Skills (bulleted, matches typical job posting keywords)
+  - Work Experience (2 roles for senior; 1 internship for junior)
+  - Education (degree, university, CGPA)
+  - Projects (final year project or personal project)
+
+Naming convention: {number}_{role}_{level}_{CandidateName}.docx
+  - number  : 01–20 (keeps folder sorted by category)
+  - role    : job category slug (e.g. software_engineer, data_analyst)
+  - level   : junior or senior
+  - name    : first name + last name of the fictional candidate
+
+Note: These files are for local demo/testing only. They are not committed to
+the production repository and do not appear on the deployed Render service.
 
 
 ================================================================================
