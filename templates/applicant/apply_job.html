@@ -42,6 +42,19 @@
                     <label>Cover Letter (Optional)</label>
                     <textarea name="cover_letter" rows="4" placeholder="Tell us why you're a great fit for this role..."></textarea>
                 </div>
+                <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <span style="font-size:16px;">&#x1F4C4;</span>
+                        <span style="font-size:13px;font-weight:700;color:#9a3412;">Not sure how to structure your resume?</span>
+                    </div>
+                    <p style="font-size:12px;color:#78350f;line-height:1.6;margin-bottom:10px;">
+                        Download our resume template to maximise your match score. It includes all the recommended sections and tips on which keywords to include.
+                    </p>
+                    <a href="{{ url_for('static', filename='downloads/resume_template.docx') }}" download class="btn btn-outline btn-sm" style="border-color:#f97316;color:#c2410c;">
+                        &#x2B07; Download Resume Template (.docx)
+                    </a>
+                </div>
+
                 <div class="form-group">
                     <label>Upload Resume *</label>
                     <div class="upload-box" style="padding:20px;cursor:pointer;" onclick="document.getElementById('resumeInput').click()">
