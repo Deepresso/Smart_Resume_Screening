@@ -3,6 +3,7 @@ __pycache__/
 
 instance/
 uploads/
+sample_resumes/
 
 .env
 .venv/

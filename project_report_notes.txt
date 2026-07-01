@@ -762,7 +762,28 @@ Naming convention: {number}_{role}_{level}_{CandidateName}.docx
   - name    : first name + last name of the fictional candidate
 
 Note: These files are for local demo/testing only. They are not committed to
-the production repository and do not appear on the deployed Render service.
+the production repository (sample_resumes/ is in .gitignore) and do not
+appear on the deployed Render service.
+
+Automated Test Session (test_session.py):
+  A seeder script (committed to repo) that loads all 20 resumes into the
+  system without needing a running HTTP server. It runs in Flask app context
+  directly, bypassing email verification. Usage:
+    py test_session.py          — seed 10 jobs + 20 applicants + scores
+    py test_session.py --clean  — wipe previous test data and reseed
+    py test_session.py --report — print score table for all test applications
+  Job postings are tagged [TEST] for easy identification and cleanup.
+  Applicant accounts use @testresume.local emails and are pre-verified.
+  Resume files are copied from sample_resumes/ into uploads/ and scored
+  using the live NLP pipeline (extract_text + compute_scores).
+
+  Observed scores on first run (representative of NLP accuracy):
+    Keyword score range   : 75% – 100%  (all resumes match job keywords well)
+    Fuzzy score range     : 80% – 98%
+    TF-IDF sim range      : 32% – 55%   (expected — cosine sim is conservative)
+    Composite score range : 67% – 86%
+  Senior resumes tend to score higher than junior resumes for the same job
+  due to broader skill vocabulary matching the job description.
 
 
 ================================================================================
