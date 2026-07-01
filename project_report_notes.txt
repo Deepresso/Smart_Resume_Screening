@@ -611,6 +611,9 @@ How auto-deployment works:
 
 Production vs Local difference:
   - Local  : Uses SQLite (instance/smart_resume.db), started with py app.py
+             use_reloader=False is set to prevent Werkzeug spawning two processes
+             against the same SQLite file, which caused intermittent session
+             invalidation (user_loader SQLite lock → None → auto-logout).
   - Render : Uses PostgreSQL, started with gunicorn, env vars injected by Render
 
 Environment variables required on Render:
