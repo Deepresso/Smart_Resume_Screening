@@ -157,16 +157,16 @@
         <div style="margin-top:20px;">
             <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (30% of score)</div>
             <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
-                {% if appl.similarity_score >= 80 %}
-                <span style="color:var(--green);font-weight:700;">Excellent alignment.</span> The resume's overall language, terminology, and topics closely match the job description. The candidate's background appears highly relevant to this role.
-                {% elif appl.similarity_score >= 60 %}
-                <span style="color:var(--orange);font-weight:700;">Moderate alignment.</span> The resume covers some relevant topics but there are gaps in key areas. The candidate may have a partially matching background.
-                {% elif appl.similarity_score >= 40 %}
-                <span style="color:var(--orange);font-weight:700;">Low-moderate alignment.</span> Limited thematic overlap between the resume and job description. The candidate's experience may not directly match this role's requirements.
+                {% if appl.similarity_score >= 50 %}
+                <span style="color:var(--green);font-weight:700;">Strong thematic match.</span> The resume shares strong vocabulary and topic overlap with the job description — an above-average result for this algorithm.
+                {% elif appl.similarity_score >= 35 %}
+                <span style="color:var(--green);font-weight:700;">Good thematic match.</span> The resume aligns well with the job description. This is a typical and healthy score for a well-matched candidate.
+                {% elif appl.similarity_score >= 20 %}
+                <span style="color:var(--orange);font-weight:700;">Moderate thematic match.</span> Some shared vocabulary between the resume and job description. Consider the keyword and fuzzy scores for a fuller picture.
                 {% else %}
-                <span style="color:var(--red);font-weight:700;">Poor alignment.</span> The resume's language and content differ significantly from the job description. This candidate's background does not appear to match this role.
+                <span style="color:var(--orange);font-weight:700;">Low thematic overlap.</span> Limited shared vocabulary detected. The candidate may still be suitable — refer to keyword and fuzzy scores.
                 {% endif %}
-                <br><span class="text-muted" style="font-size:12px;">This score is calculated using TF-IDF vectorisation and cosine similarity across the full text of both documents.</span>
+                <br><span class="text-muted" style="font-size:12px;">Note: TF-IDF cosine similarity between resumes and job descriptions typically ranges 30–55% due to structural differences in language — this is normal and expected.</span>
             </div>
         </div>
 

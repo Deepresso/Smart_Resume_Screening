@@ -280,7 +280,12 @@ How it works:
   - No training is required — the vectorizer is built fresh for each pair.
 
 Strength  : Captures overall thematic alignment between documents
-Limitation: Treats words as independent tokens, ignores word meaning and context
+Limitation: Treats words as independent tokens, ignores word meaning and context.
+            Scores between resumes and job descriptions naturally fall in 30–55%
+            due to structural language differences (resume uses past-tense action
+            verbs; job descriptions use requirement language). This is expected
+            and does not indicate a poor match. Verdict labels in the UI are
+            calibrated to this range: ≥50% = Strong, ≥35% = Good, ≥20% = Moderate.
 
 ------------------------------------
 8.4 COMPOSITE SCORE FORMULA (3 techniques)
