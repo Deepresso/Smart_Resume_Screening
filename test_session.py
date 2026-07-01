@@ -428,7 +428,6 @@ def seed():
             keyword_score=scores['keyword_score'],
             fuzzy_score=scores['fuzzy_score'],
             similarity_score=scores['similarity_score'],
-            semantic_score=scores['semantic_score'],
             composite_score=scores['composite_score'],
             status='submitted',
         )

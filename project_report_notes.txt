@@ -120,7 +120,7 @@ TABLE: applications
   keyword_score    FLOAT      Score from Keyword Matching algorithm
   fuzzy_score      FLOAT      Score from Fuzzy Matching algorithm
   similarity_score FLOAT      Score from TF-IDF Cosine Similarity
-  semantic_score   FLOAT      Score from BERT Semantic Similarity
+  semantic_score   FLOAT      (removed — was BERT score, always 0.0, column dropped)
   composite_score  FLOAT      Weighted final score
   status           VARCHAR    'submitted', 'shortlisted', or 'rejected'
   applied_at       DATETIME   Timestamp of submission
@@ -303,8 +303,8 @@ but removed from the final system due to deployment constraints:
     but Render's free tier showed intermittent DNS resolution failures for
     external ML hosting services.
   - Final decision: remove BERT and use the reliable 3-algorithm system.
-  - semantic_score column is retained in the database (always stores 0.0)
-    to avoid breaking existing data.
+  - semantic_score column has been fully removed from the model and codebase.
+    The column may still exist in older databases but is no longer referenced.
 
 All scores are stored in the database and displayed to HR on the
 Screening Results page, ranked from highest to lowest composite score.
@@ -458,12 +458,10 @@ Both decorators are used alongside @login_required to ensure:
   - The page shows "404 — Page Not Found" with a link back to the login page.
 
 Database Auto-Migration:
-  - When the semantic_score column was added to the Application model,
-    existing databases would not have this column.
-  - An auto-migration block was added to app.py that runs on startup:
-      It inspects the existing 'applications' table columns.
-      If 'semantic_score' is missing, it runs ALTER TABLE to add the column.
-      This ensures the app works on both new and existing databases.
+  - app.py runs a startup migration block that inspects existing tables and
+    applies ALTER TABLE for any missing columns (phone, address1, address2,
+    postcode, state, is_verified, verify_code on the users table).
+  - The semantic_score migration was removed when BERT was dropped.
 
 
 --------------------------------------------------------------------------------

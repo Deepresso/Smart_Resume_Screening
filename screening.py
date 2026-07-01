@@ -103,6 +103,5 @@ def compute_scores(resume_text, job_description, keywords):
         'keyword_score':    kw,
         'fuzzy_score':      fz,
         'similarity_score': sim,
-        'semantic_score':   0.0,
         'composite_score':  composite,
     }

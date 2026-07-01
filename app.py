@@ -86,11 +86,6 @@ with app.app_context():
 
     if inspector.has_table('applications'):
         existing = [c['name'] for c in inspector.get_columns('applications')]
-        if 'semantic_score' not in existing:
-            with db.engine.connect() as conn:
-                conn.execute(text('ALTER TABLE applications ADD COLUMN semantic_score FLOAT DEFAULT 0.0'))
-                conn.commit()
-
     if inspector.has_table('users'):
         existing = [c['name'] for c in inspector.get_columns('users')]
         new_cols = {
@@ -514,7 +509,6 @@ def applicant_apply(job_id):
             keyword_score=scores['keyword_score'],
             fuzzy_score=scores['fuzzy_score'],
             similarity_score=scores['similarity_score'],
-            semantic_score=scores['semantic_score'],
             composite_score=scores['composite_score'],
             status='submitted'
         )
