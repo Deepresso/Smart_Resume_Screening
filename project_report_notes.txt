@@ -350,13 +350,28 @@ Candidate Detail:
   - Shows extracted resume text in a scrollable box.
   - Shows cover letter if submitted.
   - Candidate info: name, email, job applied for, date, rank, status.
-  - Score breakdown with progress bars for all 4 techniques.
+  - Score breakdown with progress bars for all 3 techniques.
   - Detailed Score Analysis section:
       * Keyword Matching: green pills for found keywords, red for missing.
       * Fuzzy Matching: per-keyword score bars with colour coding.
-      * Text Similarity: plain-English verdict based on score range.
-      * BERT Semantic: interpreted result (Excellent / Moderate / Low / Poor).
-  - Shortlist and Reject buttons update Application.status in the database.
+      * Text Similarity: plain-English verdict calibrated to TF-IDF's natural
+        30–55% range (>=50% Strong, >=35% Good, >=20% Moderate, <20% Low).
+  - Shortlist and Reject buttons update Application.status in the database
+    and immediately trigger an automated email notification to the applicant.
+
+Email Notifications (Shortlist / Reject):
+  - Triggered by HR clicking Shortlist or Reject on the candidate detail page.
+  - Sent asynchronously via SendGrid (threading.Thread, daemon=True) so the
+    HR redirect is instant and not delayed by the API call.
+  - Shortlist email: congratulates the applicant, shows their match score,
+    tells them the hiring team will be in touch.
+  - Reject email: professional, encouraging tone; reminds applicant about the
+    resume template download to improve future applications.
+  - Both emails use the same branded HTML template as the verification email
+    (Resumatch navy header, styled body, muted footer).
+  - Subject lines:
+      Shortlist: "Application Update — You have been shortlisted for {job}"
+      Reject:    "Application Update — {job} at {company}"
 
 Candidates Page:
   - All applicants across all HR's jobs, ordered by composite score.
@@ -703,10 +718,9 @@ Very small (≤380px):
 Current Limitations:
   1. Only one HR account is supported (the seeded admin account).
   2. Existing applications do not get re-scored when job keywords are edited.
-  3. The system does not send email notifications for shortlisted applicants.
-  4. Uploaded resume files are lost on Render redeploy (ephemeral filesystem).
-  5. Only one concurrent resume submission at a time (single gunicorn worker).
-  6. BERT semantic scoring was removed due to Render free tier RAM constraints
+  3. Uploaded resume files are lost on Render redeploy (ephemeral filesystem).
+  4. Only one concurrent resume submission at a time (single gunicorn worker).
+  5. BERT semantic scoring was removed due to Render free tier RAM constraints
      (see Section 8.4). Running on a paid server would re-enable it.
 
 Possible Future Improvements:

@@ -366,6 +366,40 @@ def hr_shortlist_application(app_id):
     appl = Application.query.get_or_404(app_id)
     appl.status = 'shortlisted'
     db.session.commit()
+    name     = appl.applicant.name
+    email    = appl.applicant.email
+    job      = appl.job.title
+    company  = appl.job.company
+    score    = appl.composite_score
+    html = f"""
+<div style="font-family:Calibri,Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+  <div style="background:#1e293b;padding:24px 28px;">
+    <div style="font-size:20px;font-weight:800;color:#ffffff;">Resumatch</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Smart Resume Screening</div>
+  </div>
+  <div style="padding:28px;">
+    <div style="font-size:22px;font-weight:700;color:#16a34a;margin-bottom:6px;">&#x2705; Congratulations, {name}!</div>
+    <p style="font-size:14px;color:#334155;line-height:1.7;margin-bottom:16px;">
+      We are pleased to inform you that your application for <strong>{job}</strong> at <strong>{company}</strong>
+      has been <strong style="color:#16a34a;">shortlisted</strong>.
+    </p>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+      <div style="font-size:12px;color:#15803d;font-weight:700;margin-bottom:4px;">YOUR MATCH SCORE</div>
+      <div style="font-size:28px;font-weight:900;color:#16a34a;">{score}%</div>
+    </div>
+    <p style="font-size:13px;color:#64748b;line-height:1.7;">
+      The hiring team was impressed with your profile. They will be in touch with you shortly regarding the next steps.
+      Please ensure your contact details are up to date.
+    </p>
+    <p style="font-size:13px;color:#64748b;margin-top:16px;">Best regards,<br><strong style="color:#1e293b;">The Resumatch Team</strong></p>
+  </div>
+  <div style="background:#f8fafc;padding:14px 28px;text-align:center;">
+    <p style="font-size:11px;color:#94a3b8;margin:0;">This is an automated notification from the Smart Resume Screening System.</p>
+  </div>
+</div>"""
+    plain = (f"Congratulations {name}! Your application for {job} at {company} has been shortlisted. "
+             f"Your match score: {score}%. The hiring team will contact you soon.")
+    threading.Thread(target=send_email_async, args=(email, f'Application Update — You have been shortlisted for {job}', html, plain), daemon=True).start()
     return redirect(request.referrer or url_for('hr_candidates'))
 
 @app.route('/hr/applications/<int:app_id>/reject', methods=['POST'])
@@ -375,6 +409,43 @@ def hr_reject_application(app_id):
     appl = Application.query.get_or_404(app_id)
     appl.status = 'rejected'
     db.session.commit()
+    name     = appl.applicant.name
+    email    = appl.applicant.email
+    job      = appl.job.title
+    company  = appl.job.company
+    html = f"""
+<div style="font-family:Calibri,Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+  <div style="background:#1e293b;padding:24px 28px;">
+    <div style="font-size:20px;font-weight:800;color:#ffffff;">Resumatch</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Smart Resume Screening</div>
+  </div>
+  <div style="padding:28px;">
+    <div style="font-size:20px;font-weight:700;color:#334155;margin-bottom:6px;">Application Status Update</div>
+    <p style="font-size:14px;color:#334155;line-height:1.7;margin-bottom:16px;">
+      Dear <strong>{name}</strong>,<br><br>
+      Thank you for applying for <strong>{job}</strong> at <strong>{company}</strong>.
+      After careful review, we regret to inform you that your application has <strong style="color:#dc2626;">not been selected</strong>
+      to proceed to the next stage.
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+      <p style="font-size:13px;color:#991b1b;margin:0;line-height:1.6;">
+        We encourage you to continue improving your resume and applying for future openings that match your skill set.
+        You can download our <strong>resume template</strong> from the applicant portal to maximise your match score.
+      </p>
+    </div>
+    <p style="font-size:13px;color:#64748b;line-height:1.7;">
+      We appreciate the time you invested in your application and wish you the best in your job search.
+    </p>
+    <p style="font-size:13px;color:#64748b;margin-top:16px;">Best regards,<br><strong style="color:#1e293b;">The Resumatch Team</strong></p>
+  </div>
+  <div style="background:#f8fafc;padding:14px 28px;text-align:center;">
+    <p style="font-size:11px;color:#94a3b8;margin:0;">This is an automated notification from the Smart Resume Screening System.</p>
+  </div>
+</div>"""
+    plain = (f"Dear {name}, thank you for applying for {job} at {company}. "
+             f"After careful review, your application has not been selected to proceed. "
+             f"We wish you the best in your job search.")
+    threading.Thread(target=send_email_async, args=(email, f'Application Update — {job} at {company}', html, plain), daemon=True).start()
     return redirect(request.referrer or url_for('hr_candidates'))
 
 @app.route('/hr/candidates/<int:candidate_id>')
