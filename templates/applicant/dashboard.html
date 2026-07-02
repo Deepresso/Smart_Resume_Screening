@@ -22,6 +22,19 @@
                 </div>
                 <div class="job-title">{{ job.title }}</div>
                 <div class="job-meta">{{ job.company }} &middot; {{ job.location }}</div>
+                {% if job.salary_min or job.salary_max %}
+                <div style="font-size:12px;font-weight:700;color:var(--green);margin:4px 0;">
+                    RM
+                    {% if job.salary_min and job.salary_max %}
+                        {{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}
+                    {% elif job.salary_min %}
+                        {{ '{:,}'.format(job.salary_min) }}+
+                    {% else %}
+                        Up to {{ '{:,}'.format(job.salary_max) }}
+                    {% endif %}
+                    / month
+                </div>
+                {% endif %}
                 {% if job.keywords %}
                 <div class="job-tags">
                     {% for kw in job.keywords.split(',')[:3] %}
