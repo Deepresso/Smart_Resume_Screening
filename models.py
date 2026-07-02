@@ -55,3 +55,16 @@ class Application(db.Model):
     composite_score = db.Column(db.Float, default=0.0)
     status          = db.Column(db.String(30), default='submitted')  # submitted, review, shortlisted, rejected
     applied_at      = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message    = db.Column(db.String(300), nullable=False)
+    link       = db.Column(db.String(200))
+    is_read    = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='notifications')

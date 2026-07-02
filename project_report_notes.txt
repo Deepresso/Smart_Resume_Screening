@@ -442,6 +442,25 @@ Resume Template Download:
       1. Dashboard: orange gradient card on the right column
       2. Apply for Job page: tip box directly above the file upload field
 
+In-App Notification Bell:
+  - A fixed bell icon (&#x1F514;) appears in the top-right corner of every
+    applicant page. A red badge shows the unread count.
+  - Clicking the bell opens a dropdown listing up to 15 recent notifications,
+    newest first. Unread items are highlighted in blue with a left border.
+  - Clicking a notification marks it as read and redirects to the relevant page.
+  - "Mark all read" button clears the badge in one click.
+  - Two notification types are generated automatically:
+      1. Status change — created when HR shortlists or rejects an application.
+         Shortlist: "🎉 Your application for [job] at [company] has been shortlisted!"
+         Reject:    "📋 A decision has been made on your [job] application at [company]."
+      2. New job posted — created for ALL verified applicants when HR publishes
+         a new job posting: "🔔 New job posted: [title] at [company] ([location])"
+  - Implemented via a Flask context_processor (inject_notifications) that
+    injects `notifs` and `notif_unread` into every applicant template
+    automatically — no route changes needed.
+  - Notification model: id, user_id (FK), message, link, is_read, created_at.
+  - Table created automatically by db.create_all() on app startup.
+
 Settings:
   - Applicant can update name, email, and password.
 

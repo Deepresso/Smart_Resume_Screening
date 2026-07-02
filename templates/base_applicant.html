@@ -54,6 +54,39 @@
     <main class="main-content">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Bell notification widget -->
+    <div class="notif-widget" id="notifWidget">
+        <button class="notif-bell" id="notifBell" onclick="toggleNotif(event)" aria-label="Notifications">
+            &#x1F514;
+            {% if notif_unread > 0 %}
+            <span class="notif-badge">{{ notif_unread }}</span>
+            {% endif %}
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-header">
+                <span style="font-weight:700;font-size:13px;color:var(--navy);">Notifications</span>
+                {% if notif_unread > 0 %}
+                <form method="POST" action="{{ url_for('applicant_read_all_notifications') }}" style="margin:0;">
+                    <button type="submit" class="notif-read-all">Mark all read</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="notif-list">
+                {% if notifs %}
+                    {% for n in notifs %}
+                    <a href="{{ url_for('applicant_read_notification', notif_id=n.id) }}"
+                       class="notif-item {% if not n.is_read %}unread{% endif %}">
+                        <div class="notif-msg">{{ n.message }}</div>
+                        <div class="notif-time">{{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="notif-empty">No notifications yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 <script>
 function toggleSidebar() {
@@ -64,6 +97,13 @@ function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('open');
 }
+function toggleNotif(e) {
+    e.stopPropagation();
+    document.getElementById('notifDropdown').classList.toggle('open');
+}
+document.addEventListener('click', function() {
+    document.getElementById('notifDropdown').classList.remove('open');
+});
 </script>
 </body>
 </html>

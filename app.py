@@ -13,7 +13,7 @@ from flask_bcrypt import Bcrypt
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail as SGMail
 from werkzeug.utils import secure_filename
-from models import db, User, JobPosting, Application
+from models import db, User, JobPosting, Application, Notification
 from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown
 
 MY_PHONE_RE = re.compile(r'^(\+?60|0)1[0-9]\d{7,8}$')
@@ -76,6 +76,17 @@ def applicant_required(f):
             return redirect(url_for('hr_dashboard'))
         return f(*args, **kwargs)
     return decorated
+
+@app.context_processor
+def inject_notifications():
+    if current_user.is_authenticated and current_user.role == 'applicant':
+        notifs = (Notification.query
+                  .filter_by(user_id=current_user.id)
+                  .order_by(Notification.created_at.desc())
+                  .limit(15).all())
+        unread = sum(1 for n in notifs if not n.is_read)
+        return {'notifs': notifs, 'notif_unread': unread}
+    return {'notifs': [], 'notif_unread': 0}
 
 with app.app_context():
     db.create_all()
@@ -278,6 +289,14 @@ def hr_new_job():
                              description=description, keywords=keywords,
                              created_by=current_user.id)
             db.session.add(job)
+            db.session.flush()
+            applicants = User.query.filter_by(role='applicant', is_verified=True).all()
+            for a in applicants:
+                db.session.add(Notification(
+                    user_id=a.id,
+                    message=f'🔔 New job posted: {title} at {company} ({location})',
+                    link=url_for('applicant_apply', job_id=job.id)
+                ))
             db.session.commit()
             return redirect(url_for('hr_jobs'))
     return render_template('hr/new_job_posting.html')
@@ -365,6 +384,11 @@ def hr_export_csv(job_id):
 def hr_shortlist_application(app_id):
     appl = Application.query.get_or_404(app_id)
     appl.status = 'shortlisted'
+    db.session.add(Notification(
+        user_id=appl.user_id,
+        message=f'🎉 Your application for {appl.job.title} at {appl.job.company} has been shortlisted!',
+        link=url_for('applicant_application_detail', app_id=appl.id)
+    ))
     db.session.commit()
     name     = appl.applicant.name
     email    = appl.applicant.email
@@ -408,6 +432,11 @@ def hr_shortlist_application(app_id):
 def hr_reject_application(app_id):
     appl = Application.query.get_or_404(app_id)
     appl.status = 'rejected'
+    db.session.add(Notification(
+        user_id=appl.user_id,
+        message=f'📋 A decision has been made on your {appl.job.title} application at {appl.job.company}.',
+        link=url_for('applicant_application_detail', app_id=appl.id)
+    ))
     db.session.commit()
     name     = appl.applicant.name
     email    = appl.applicant.email
@@ -604,6 +633,24 @@ def applicant_application_detail(app_id):
     rank = next((i + 1 for i, a in enumerate(all_apps) if a.id == appl.id), 1)
     total = len(all_apps)
     return render_template('applicant/application_detail.html', appl=appl, rank=rank, total=total)
+
+@app.route('/applicant/notifications/<int:notif_id>/read')
+@login_required
+@applicant_required
+def applicant_read_notification(notif_id):
+    notif = Notification.query.get_or_404(notif_id)
+    if notif.user_id == current_user.id:
+        notif.is_read = True
+        db.session.commit()
+    return redirect(notif.link or url_for('applicant_dashboard'))
+
+@app.route('/applicant/notifications/read-all', methods=['POST'])
+@login_required
+@applicant_required
+def applicant_read_all_notifications():
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return redirect(request.referrer or url_for('applicant_dashboard'))
 
 @app.route('/applicant/settings', methods=['GET', 'POST'])
 @login_required
