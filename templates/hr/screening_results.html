@@ -1,6 +1,15 @@
 {% extends "base_hr.html" %}
 {% block title %}Screening Results{% endblock %}
 {% block content %}
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;font-weight:600;">
+    ✓ {{ messages[0] }}
+</div>
+{% endif %}
+{% endwith %}
+
 <div class="page-header">
     <div>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -11,9 +20,36 @@
     </div>
     <div class="header-actions">
         <a href="{{ url_for('hr_export_csv', job_id=job.id) }}" class="btn btn-outline btn-sm">&#x2B07; Export CSV</a>
+        {% if applications %}
+        <form method="POST" action="{{ url_for('hr_rescore_job', job_id=job.id) }}" id="rescoreForm" style="display:inline;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('rescoreModal').style.display='flex'" style="border-color:var(--orange);color:var(--orange);">
+                &#x21BB; Re-score
+            </button>
+        </form>
+        {% endif %}
         <span class="stat-badge badge-blue">{{ applications | length }} Applicant{{ 's' if applications | length != 1 }}</span>
     </div>
 </div>
+
+<!-- Re-score confirmation modal -->
+{% if applications %}
+<div id="rescoreModal" style="display:{% if request.args.get('confirm_rescore') %}flex{% else %}none{% endif %};
+     position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="font-size:32px;text-align:center;margin-bottom:12px;">&#x21BB;</div>
+        <div style="font-size:17px;font-weight:800;color:var(--navy);text-align:center;margin-bottom:8px;">Re-score Applications?</div>
+        <p style="font-size:13px;color:var(--text-muted);text-align:center;line-height:1.6;margin-bottom:20px;">
+            This will recalculate NLP scores for all <strong>{{ applications | length }} application{{ 's' if applications | length != 1 }}</strong>
+            using the current keywords and job description.<br><br>
+            Each applicant will be notified of their updated score. Shortlist and reject decisions will <strong>not</strong> be changed.
+        </p>
+        <div style="display:flex;gap:10px;">
+            <button onclick="document.getElementById('rescoreModal').style.display='none'" class="btn btn-outline" style="flex:1;">Cancel</button>
+            <button onclick="document.getElementById('rescoreForm').submit()" class="btn btn-primary" style="flex:1;background:var(--orange);border-color:var(--orange);">Yes, Re-score All</button>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <div class="table-wrap">

@@ -338,13 +338,36 @@ Screening Results (Two-level navigation):
   - Screening Results page shows all applicants for that job ranked by
     composite score (highest first).
   - Each row shows: rank, candidate name/email, composite score (colour-coded),
-    keyword score, fuzzy score, TF-IDF score, BERT semantic score, status.
+    keyword score, fuzzy score, TF-IDF score, status.
   - Actions per row: View profile, Shortlist (green tick), Reject (red cross).
   - Export CSV button downloads a spreadsheet of all candidates for that job
     with all scores and status — filename format: screening_{JobTitle}_{id}.csv
     Implementation: hr_export_csv route uses Python's csv module and
     io.StringIO to build the file in memory, returned as a Flask Response
     with Content-Disposition: attachment.
+
+Re-score Feature (Keyword change → re-screen):
+  - When HR edits a job posting and there are existing applications, they are
+    redirected to Screening Results with ?confirm_rescore=1 in the URL.
+  - A modal popup auto-opens showing the number of applications that will be
+    re-scored, with a "Yes, Re-score All" button and a "Cancel" button.
+  - HR can also trigger a re-score at any time using the "↻ Re-score" button
+    in the Screening Results page header (visible only when applications exist).
+  - Route: POST /hr/jobs/<job_id>/rescore (hr_rescore_job)
+  - Re-score logic:
+      1. Runs compute_scores() on stored resume_text using the current
+         job description and keywords — no file re-upload needed.
+      2. Updates keyword_score, fuzzy_score, similarity_score, composite_score.
+      3. Resets application status to 'submitted' so HR must shortlist or
+         reject again — all previously-made decisions are cleared.
+      4. Creates a Notification for each applicant:
+         "📊 Your application for [job] has been re-scored (old% → new%).
+          Your application is now pending HR review again."
+      5. Only affects applications for the specified job_id — other jobs
+         and their applicants are never touched.
+  - Flash message confirms: "Re-scored N applications. All statuses reset to Pending Review."
+  - Because statuses reset to 'submitted', re-scored applications reappear in
+    the HR Dashboard Pending Review panel, requiring fresh shortlist/reject decisions.
 
 Candidate Detail:
   - Shows extracted resume text in a scrollable box.
@@ -736,21 +759,18 @@ Very small (≤380px):
 
 Current Limitations:
   1. Only one HR account is supported (the seeded admin account).
-  2. Existing applications do not get re-scored when job keywords are edited.
-  3. Uploaded resume files are lost on Render redeploy (ephemeral filesystem).
-  4. Only one concurrent resume submission at a time (single gunicorn worker).
-  5. BERT semantic scoring was removed due to Render free tier RAM constraints
+  2. Uploaded resume files are lost on Render redeploy (ephemeral filesystem).
+  3. Only one concurrent resume submission at a time (single gunicorn worker).
+  4. BERT semantic scoring was removed due to Render free tier RAM constraints
      (see Section 8.4). Running on a paid server would re-enable it.
 
 Possible Future Improvements:
-  1. Add email notifications when an applicant is shortlisted or rejected.
-  2. Allow HR to re-screen existing applications after editing job keywords.
-  3. Store uploaded resumes in cloud storage (AWS S3 / Cloudinary) for persistence.
-  4. Add resume parsing to extract structured data (name, education, skills).
-  5. Allow HR to adjust NLP scoring weights through the settings page.
-  6. Add a candidate comparison view to display two applicants side by side.
-  7. Re-enable BERT semantic scoring on a higher-RAM production server.
-  8. Add a feedback loop where HR shortlist/reject decisions train a future ML model.
+  1. Store uploaded resumes in cloud storage (AWS S3 / Cloudinary) for persistence.
+  2. Add resume parsing to extract structured data (name, education, skills).
+  3. Allow HR to adjust NLP scoring weights through the settings page.
+  4. Add a candidate comparison view to display two applicants side by side.
+  5. Re-enable BERT semantic scoring on a higher-RAM production server.
+  6. Add a feedback loop where HR shortlist/reject decisions train a future ML model.
 
 
 --------------------------------------------------------------------------------

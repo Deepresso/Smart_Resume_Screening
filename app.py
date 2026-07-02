@@ -321,6 +321,9 @@ def hr_edit_job(job_id):
             job.description = description
             job.keywords    = keywords
             db.session.commit()
+            app_count = Application.query.filter_by(job_id=job_id).count()
+            if app_count > 0:
+                return redirect(url_for('hr_screening_results', job_id=job_id, confirm_rescore=1))
             return redirect(url_for('hr_jobs'))
     return render_template('hr/edit_job_posting.html', job=job)
 
@@ -357,6 +360,35 @@ def hr_screening_results(job_id):
     job = JobPosting.query.get_or_404(job_id)
     applications = Application.query.filter_by(job_id=job_id).order_by(Application.composite_score.desc()).all()
     return render_template('hr/screening_results.html', job=job, applications=applications)
+
+@app.route('/hr/jobs/<int:job_id>/rescore', methods=['POST'])
+@login_required
+@hr_required
+def hr_rescore_job(job_id):
+    job = JobPosting.query.get_or_404(job_id)
+    applications = Application.query.filter_by(job_id=job_id).all()
+    rescored = 0
+    for appl in applications:
+        if not appl.resume_text:
+            continue
+        old_score = appl.composite_score
+        scores = compute_scores(appl.resume_text, job.description, job.keywords or '')
+        appl.keyword_score    = scores['keyword_score']
+        appl.fuzzy_score      = scores['fuzzy_score']
+        appl.similarity_score = scores['similarity_score']
+        appl.composite_score  = scores['composite_score']
+        appl.status           = 'submitted'
+        db.session.add(Notification(
+            user_id=appl.user_id,
+            message=(f'📊 Your application for {job.title} has been re-scored '
+                     f'({old_score}% → {scores["composite_score"]}%). '
+                     f'Your application is now pending HR review again.'),
+            link=url_for('applicant_application_detail', app_id=appl.id)
+        ))
+        rescored += 1
+    db.session.commit()
+    flash(f'Re-scored {rescored} application{"s" if rescored != 1 else ""}. All statuses reset to Pending Review.')
+    return redirect(url_for('hr_screening_results', job_id=job_id))
 
 @app.route('/hr/jobs/<int:job_id>/export-csv')
 @login_required
