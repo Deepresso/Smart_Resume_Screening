@@ -33,6 +33,8 @@ class JobPosting(db.Model):
     location    = db.Column(db.String(100))
     description = db.Column(db.Text, nullable=False)
     keywords    = db.Column(db.Text)           # comma-separated keywords
+    salary_min  = db.Column(db.Integer)        # monthly salary in MYR, optional
+    salary_max  = db.Column(db.Integer)
     created_by  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     is_active   = db.Column(db.Boolean, default=True)

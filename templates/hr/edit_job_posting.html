@@ -38,6 +38,16 @@
                             <input type="text" name="location" id="previewLocation" value="{{ job.location }}" oninput="updatePreview()">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Salary Min (MYR/month)</label>
+                            <input type="number" name="salary_min" value="{{ job.salary_min or '' }}" placeholder="e.g. 3000" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Salary Max (MYR/month)</label>
+                            <input type="number" name="salary_max" value="{{ job.salary_max or '' }}" placeholder="e.g. 6000" min="0">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Job Description *</label>
                         <textarea name="description" rows="5" required>{{ job.description }}</textarea>

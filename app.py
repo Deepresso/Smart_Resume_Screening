@@ -114,6 +114,14 @@ with app.app_context():
                     conn.execute(text(f'ALTER TABLE users ADD COLUMN {col} {col_type}'))
             conn.commit()
 
+    if inspector.has_table('job_postings'):
+        existing_jp = [c['name'] for c in inspector.get_columns('job_postings')]
+        with db.engine.connect() as conn:
+            for col in ('salary_min', 'salary_max'):
+                if col not in existing_jp:
+                    conn.execute(text(f'ALTER TABLE job_postings ADD COLUMN {col} INTEGER'))
+            conn.commit()
+
     # Seed default HR account if none exists
     if not User.query.filter_by(role='hr').first():
         hashed = bcrypt.generate_password_hash('admin123').decode('utf-8')
@@ -282,11 +290,16 @@ def hr_new_job():
         location    = request.form.get('location', '').strip()
         description = request.form.get('description', '').strip()
         keywords    = request.form.get('keywords', '').strip()
+        salary_min  = request.form.get('salary_min', '').strip() or None
+        salary_max  = request.form.get('salary_max', '').strip() or None
+        if salary_min: salary_min = int(salary_min)
+        if salary_max: salary_max = int(salary_max)
         if not title or not description:
             flash('Job title and description are required.')
         else:
             job = JobPosting(title=title, company=company, location=location,
                              description=description, keywords=keywords,
+                             salary_min=salary_min, salary_max=salary_max,
                              created_by=current_user.id)
             db.session.add(job)
             db.session.flush()
@@ -312,6 +325,10 @@ def hr_edit_job(job_id):
         location    = request.form.get('location', '').strip()
         description = request.form.get('description', '').strip()
         keywords    = request.form.get('keywords', '').strip()
+        salary_min  = request.form.get('salary_min', '').strip() or None
+        salary_max  = request.form.get('salary_max', '').strip() or None
+        if salary_min: salary_min = int(salary_min)
+        if salary_max: salary_max = int(salary_max)
         if not title or not description:
             flash('Job title and description are required.')
         else:
@@ -319,6 +336,8 @@ def hr_edit_job(job_id):
             job.company     = company
             job.location    = location
             job.description = description
+            job.salary_min  = salary_min
+            job.salary_max  = salary_max
             job.keywords    = keywords
             db.session.commit()
             app_count = Application.query.filter_by(job_id=job_id).count()

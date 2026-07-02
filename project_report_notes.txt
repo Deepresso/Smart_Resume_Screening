@@ -106,6 +106,8 @@ TABLE: job_postings
   location    VARCHAR(100)   Job location
   description TEXT           Full job description (used for TF-IDF and BERT)
   keywords    TEXT           Comma-separated screening keywords
+  salary_min  INTEGER        Optional minimum monthly salary in MYR
+  salary_max  INTEGER        Optional maximum monthly salary in MYR
   created_by  INTEGER        Foreign key to users.id
   created_at  DATETIME       Timestamp of creation
   is_active   BOOLEAN        Whether the posting is open or closed
@@ -165,9 +167,10 @@ Implementation file: app.py (routes), templates/hr/
 
 HR can perform full CRUD on job postings:
 
-  CREATE : Fill in job title, company, location, description, and add
-           screening keywords using a tag-style input (JavaScript-driven).
-           Keywords are stored as a comma-separated string in the database.
+  CREATE : Fill in job title, company, location, optional salary range
+           (min/max monthly MYR), description, and screening keywords using
+           a tag-style input (JavaScript-driven). Keywords are stored as a
+           comma-separated string; salary stored as two INTEGER columns.
 
   READ   : All job postings are listed in a table showing title, applicant
            count, status (active/closed), and date posted.
@@ -415,7 +418,8 @@ Dashboard:
   - Up to 3 most recent applications with status and composite score.
 
 Browse Jobs:
-  - Grid of all active job postings with title, company, location, keywords.
+  - Grid of all active job postings with title, company, location, keywords,
+    and salary range (shown in green if set by HR: "RM 3,000 – 6,000 / month").
   - Clicking a job goes to the application page.
   - Live search bar filters jobs by title, company, or keywords as the user
     types — implemented with client-side JavaScript (no page reload needed).

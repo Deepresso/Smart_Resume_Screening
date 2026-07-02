@@ -18,7 +18,22 @@
     <div class="card">
         <div class="card-body">
             <div class="text-muted text-sm" style="margin-bottom:4px;">{{ job.company }} &middot; {{ job.location }}</div>
-            <div style="font-size:22px;font-weight:800;margin-bottom:16px;">{{ job.title }}</div>
+            <div style="font-size:22px;font-weight:800;margin-bottom:8px;">{{ job.title }}</div>
+            {% if job.salary_min or job.salary_max %}
+            <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:16px;">
+                RM
+                {% if job.salary_min and job.salary_max %}
+                    {{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}
+                {% elif job.salary_min %}
+                    {{ '{:,}'.format(job.salary_min) }}+
+                {% else %}
+                    Up to {{ '{:,}'.format(job.salary_max) }}
+                {% endif %}
+                / month
+            </div>
+            {% else %}
+            <div style="margin-bottom:16px;"></div>
+            {% endif %}
 
             <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;">Job Description</div>
             <p style="font-size:13px;line-height:1.7;margin-bottom:16px;">{{ job.description }}</p>
