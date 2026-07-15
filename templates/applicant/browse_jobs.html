@@ -3,17 +3,21 @@
 {% block content %}
 <div class="page-header">
     <div><div class="page-title">Browse Jobs</div><div class="page-sub" id="job-count">{{ jobs | length }} active position{{ 's' if jobs | length != 1 }}</div></div>
-    <div class="header-actions" style="display:flex;gap:8px;">
+    <div class="header-actions" style="display:flex;gap:8px;align-items:center;">
         <div style="position:relative;">
             <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-muted);">&#x1F50D;</span>
-            <input type="text" id="search-title" placeholder="Job title or skill..." oninput="filterJobs()"
-                   style="padding:8px 14px 8px 30px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:200px;outline:none;">
+            <input type="text" id="search-title" placeholder="Job title or skill..."
+                   style="padding:8px 14px 8px 30px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:200px;outline:none;"
+                   onkeydown="if(event.key==='Enter') searchJobs()">
         </div>
         <div style="position:relative;">
             <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-muted);">&#x1F4CD;</span>
-            <input type="text" id="search-location" placeholder="Location..." oninput="filterJobs()"
-                   style="padding:8px 14px 8px 30px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:160px;outline:none;">
+            <input type="text" id="search-location" placeholder="Location..."
+                   style="padding:8px 14px 8px 30px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:150px;outline:none;"
+                   onkeydown="if(event.key==='Enter') searchJobs()">
         </div>
+        <button onclick="searchJobs()" class="btn btn-primary btn-sm">Search</button>
+        <button onclick="clearSearch()" id="clear-btn" class="btn btn-outline btn-sm" style="display:none;">Clear</button>
     </div>
 </div>
 
@@ -69,27 +73,90 @@
     No jobs match your search.
 </div>
 <script>
-function fuzzyMatch(haystack, query) {
-    if (!query) return true;
-    // split query into tokens; card matches if ALL tokens appear somewhere in haystack
-    return query.trim().split(/\s+/).every(token => haystack.includes(token));
+const TOTAL_JOBS = {{ jobs | length }};
+
+function scoreCard(card, tokens, locTokens) {
+    let score = 0;
+
+    // title tokens: +4 each in title, +2 in keywords, +1 in company
+    tokens.forEach(t => {
+        if (card.dataset.title.includes(t))    score += 4;
+        if (card.dataset.keywords.includes(t)) score += 2;
+        if (card.dataset.company.includes(t))  score += 1;
+    });
+
+    // bonus: full query phrase appears in title
+    const fullQuery = tokens.join(' ');
+    if (fullQuery && card.dataset.title.includes(fullQuery)) score += 6;
+
+    // location filter: if location tokens given, ALL must match; otherwise exclude
+    if (locTokens.length > 0) {
+        const locMatch = locTokens.every(t => card.dataset.location.includes(t));
+        if (!locMatch) return -1;
+    }
+
+    return score;
 }
 
-function filterJobs() {
-    const q = document.getElementById('search-title').value.toLowerCase();
-    const loc = document.getElementById('search-location').value.toLowerCase();
-    const cards = document.querySelectorAll('#job-grid .job-card');
+function searchJobs() {
+    const q   = document.getElementById('search-title').value.toLowerCase().trim();
+    const loc = document.getElementById('search-location').value.toLowerCase().trim();
+    const tokens    = q   ? q.split(/\s+/).filter(t => t.length > 1)   : [];
+    const locTokens = loc ? loc.split(/\s+/).filter(t => t.length > 0) : [];
+
+    const grid = document.getElementById('job-grid');
+    const cards = Array.from(grid.querySelectorAll('.job-card'));
+
+    // If both inputs empty, restore default order and show all
+    if (tokens.length === 0 && locTokens.length === 0) {
+        clearSearch();
+        return;
+    }
+
+    // Score all cards
+    const scored = cards.map(card => ({ card, score: scoreCard(card, tokens, locTokens) }));
+
+    // Sort: highest score first; score -1 means excluded
+    scored.sort((a, b) => b.score - a.score);
+
     let visible = 0;
-    cards.forEach(card => {
-        const titleField = card.dataset.title + ' ' + card.dataset.company + ' ' + card.dataset.keywords;
-        const titleMatch = fuzzyMatch(titleField, q);
-        const locMatch   = fuzzyMatch(card.dataset.location, loc);
-        const show = titleMatch && locMatch;
-        card.style.display = show ? '' : 'none';
-        if (show) visible++;
+    scored.forEach(({ card, score }) => {
+        if (score > 0) {
+            card.style.display = '';
+            // Remove any previous relevance badge
+            card.querySelector('.relevance-badge')?.remove();
+            // Mark top result
+            if (visible === 0) {
+                const badge = document.createElement('span');
+                badge.className = 'relevance-badge';
+                badge.textContent = 'Best Match';
+                badge.style.cssText = 'background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;';
+                card.querySelector('.job-card-header').appendChild(badge);
+            }
+            grid.appendChild(card); // re-order in DOM
+            visible++;
+        } else {
+            card.style.display = 'none';
+            card.querySelector('.relevance-badge')?.remove();
+        }
     });
-    document.getElementById('job-count').textContent = visible + ' active position' + (visible !== 1 ? 's' : '');
-    document.getElementById('no-results').style.display = (visible === 0 && (q || loc)) ? '' : 'none';
+
+    document.getElementById('job-count').textContent = visible + ' result' + (visible !== 1 ? 's' : '') + ' found';
+    document.getElementById('no-results').style.display = visible === 0 ? '' : 'none';
+    document.getElementById('clear-btn').style.display = '';
+}
+
+function clearSearch() {
+    document.getElementById('search-title').value = '';
+    document.getElementById('search-location').value = '';
+    document.getElementById('clear-btn').style.display = 'none';
+    document.getElementById('no-results').style.display = 'none';
+    const grid = document.getElementById('job-grid');
+    grid.querySelectorAll('.job-card').forEach(card => {
+        card.style.display = '';
+        card.querySelector('.relevance-badge')?.remove();
+    });
+    document.getElementById('job-count').textContent = TOTAL_JOBS + ' active position' + (TOTAL_JOBS !== 1 ? 's' : '');
 }
 </script>
 {% endblock %}
