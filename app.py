@@ -19,14 +19,9 @@ from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_bre
 MY_PHONE_RE = re.compile(r'^(\+?60|0)1[0-9]\d{7,8}$')
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-
-_db_url = os.environ.get('DATABASE_URL', 'sqlite:///smart_resume.db')
-if _db_url.startswith('postgres://'):
-    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+app.config['SECRET_KEY'] = 'smart-resume-secret-key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smart_resume.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 
 SENDGRID_API_KEY  = os.environ.get('SENDGRID_API_KEY')
 MAIL_SENDER_EMAIL = os.environ.get('MAIL_USERNAME', 'resumatch.fyp@gmail.com')
