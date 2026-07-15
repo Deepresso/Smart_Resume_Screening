@@ -14,7 +14,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail as SGMail
 from werkzeug.utils import secure_filename
 from models import db, User, JobPosting, Application, Notification
-from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown
+from screening import extract_text, compute_scores, keyword_breakdown, fuzzy_breakdown, semantic_score
 
 MY_PHONE_RE = re.compile(r'^(\+?60|0)1[0-9]\d{7,8}$')
 
@@ -630,8 +630,31 @@ def applicant_dashboard():
 @login_required
 @applicant_required
 def applicant_jobs():
-    jobs = JobPosting.query.filter_by(is_active=True).order_by(JobPosting.created_at.desc()).all()
-    return render_template('applicant/browse_jobs.html', jobs=jobs)
+    q     = request.args.get('q', '').strip()
+    loc_q = request.args.get('location', '').strip()
+
+    jobs = JobPosting.query.filter_by(is_active=True).all()
+    search_scores = {}
+
+    if q:
+        scored = []
+        for job in jobs:
+            job_text = f"{job.title} {job.keywords or ''} {job.description[:600]}"
+            score = semantic_score(q, job_text)
+            scored.append((job, score))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        scored = [(job, s) for job, s in scored if s >= 20.0]
+        jobs = [job for job, s in scored]
+        search_scores = {job.id: round(s) for job, s in scored}
+    else:
+        jobs = sorted(jobs, key=lambda j: j.created_at, reverse=True)
+
+    if loc_q:
+        loc_lower = loc_q.lower()
+        jobs = [j for j in jobs if j.location and loc_lower in j.location.lower()]
+
+    return render_template('applicant/browse_jobs.html', jobs=jobs,
+                           search_scores=search_scores, search_q=q, search_loc=loc_q)
 
 @app.route('/applicant/jobs/<int:job_id>/apply', methods=['GET', 'POST'])
 @login_required

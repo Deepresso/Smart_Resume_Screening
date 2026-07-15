@@ -470,17 +470,19 @@ Browse Jobs:
     keywords, and salary range (shown in green if set by HR).
   - Clicking a job goes to the application page.
   - Two search inputs (job title/skill + location) with a Search button;
-    results update on button click or Enter key press (not live/instant).
-  - Relevance-ranked results: each job card is scored against the query
-    (title match +4, keywords match +2, company match +1 per token;
-    +6 bonus if the full phrase appears in the title). Cards are re-ordered
-    in the DOM from highest to lowest score so the best match is always first.
-  - Unrelated jobs (score 0) are hidden; only relevant results are shown.
-  - Location filter is an AND gate: if given, a job must match all location
-    tokens or it is excluded regardless of title score.
-  - A "Best Match" green badge is shown on the top-ranked result.
-  - A Clear button resets both inputs and restores default job order.
-  - The result counter updates to "X results found" after a search.
+    results are computed server-side on form submission (GET request).
+  - Semantic search powered by BERT (same all-MiniLM-L6-v2 model used for
+    resume screening): the query is encoded and compared against each job's
+    title + keywords + description using cosine similarity, so the system
+    understands meaning rather than exact words. Searching "software engineer"
+    also surfaces "programmer", "developer", and "IT" roles by semantic proximity.
+  - Jobs ranked by BERT similarity score descending; jobs scoring below 20%
+    similarity are filtered out as unrelated.
+  - Location filter applied as substring match after BERT ranking.
+  - Match badges on job cards: "Best Match" (top result), "Strong Match"
+    (≥60%), "Related" (≥40%), "Active" (no search or <40%).
+  - "Clear search" link in subtitle resets to full job listing.
+  - Route: GET /applicant/jobs?q=&location= (applicant_jobs route).
 
 Apply for Job (with Quick Apply):
   - Shows full job description, screening keywords, and salary range.
