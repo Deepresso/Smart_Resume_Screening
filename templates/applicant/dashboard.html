@@ -11,6 +11,59 @@
 
 <div class="grid-2" style="align-items:start;">
     <div>
+        {% if recommended %}
+        <!-- Recommended jobs based on uploaded resume -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;">Recommended for You</div>
+            <span style="background:#eff6ff;color:#2563eb;font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;">Based on your resume</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            {% for job in recommended %}
+            {% set score = rec_scores.get(job.id, 0) %}
+            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
+                <div class="job-card-header">
+                    <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">{{ job.title[:2].upper() }}</span>
+                    {% if loop.first %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">Best Match</span>
+                    {% else %}
+                    <span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">{{ score }}% match</span>
+                    {% endif %}
+                </div>
+                <div class="job-title">{{ job.title }}</div>
+                <div class="job-meta">{{ job.company }}</div>
+                {% if job.location %}
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">&#x1F4CD; {{ job.location }}</div>
+                {% endif %}
+                {% if job.salary_min or job.salary_max %}
+                <div style="font-size:12px;font-weight:700;color:var(--green);margin:4px 0;">
+                    RM
+                    {% if job.salary_min and job.salary_max %}
+                        {{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}
+                    {% elif job.salary_min %}
+                        {{ '{:,}'.format(job.salary_min) }}+
+                    {% else %}
+                        Up to {{ '{:,}'.format(job.salary_max) }}
+                    {% endif %}
+                    / month
+                </div>
+                {% endif %}
+                {% if job.keywords %}
+                <div class="job-tags">
+                    {% for kw in job.keywords.split(',')[:3] %}
+                    <span class="skill-tag">{{ kw.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
+            Recommendations are based on skills and experience in your saved resume.
+            <a href="{{ url_for('applicant_jobs') }}" style="color:var(--orange);">Browse all jobs &rarr;</a>
+        </div>
+
+        {% else %}
+        <!-- No resume uploaded yet: show latest positions -->
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Available Positions</div>
         {% if jobs %}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -21,7 +74,10 @@
                     <span class="status status-active" style="font-size:10px;">Active</span>
                 </div>
                 <div class="job-title">{{ job.title }}</div>
-                <div class="job-meta">{{ job.company }} &middot; {{ job.location }}</div>
+                <div class="job-meta">{{ job.company }}</div>
+                {% if job.location %}
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">&#x1F4CD; {{ job.location }}</div>
+                {% endif %}
                 {% if job.salary_min or job.salary_max %}
                 <div style="font-size:12px;font-weight:700;color:var(--green);margin:4px 0;">
                     RM
@@ -51,6 +107,7 @@
                 No active job postings right now. Check back soon.
             </div>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 

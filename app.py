@@ -622,9 +622,29 @@ def hr_settings():
 @login_required
 @applicant_required
 def applicant_dashboard():
-    jobs = JobPosting.query.filter_by(is_active=True).order_by(JobPosting.created_at.desc()).limit(4).all()
+    all_jobs     = JobPosting.query.filter_by(is_active=True).all()
     applications = Application.query.filter_by(user_id=current_user.id).order_by(Application.applied_at.desc()).limit(3).all()
-    return render_template('applicant/dashboard.html', jobs=jobs, applications=applications)
+
+    recommended = []
+    rec_scores  = {}
+
+    if current_user.saved_resume_text:
+        scored = []
+        for job in all_jobs:
+            job_text = f"{job.title} {job.keywords or ''} {job.description[:500]}"
+            score = semantic_score(current_user.saved_resume_text, job_text)
+            scored.append((job, score))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        top = [(job, s) for job, s in scored[:4] if s >= 25.0]
+        if top:
+            rec_scores  = {job.id: round(s) for job, s in top}
+            recommended = [job for job, s in top]
+
+    jobs = [] if recommended else sorted(all_jobs, key=lambda j: j.created_at, reverse=True)[:4]
+
+    return render_template('applicant/dashboard.html', jobs=jobs,
+                           recommended=recommended, rec_scores=rec_scores,
+                           applications=applications)
 
 @app.route('/applicant/jobs')
 @login_required

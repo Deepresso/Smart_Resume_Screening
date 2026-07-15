@@ -462,8 +462,15 @@ Settings:
 
 Dashboard:
   - Greeting with the applicant's real name from the database.
-  - Up to 4 active job listings shown as clickable cards.
+  - Left column — Job Recommendations (if saved resume exists):
+      When the applicant has uploaded a resume to their profile, the dashboard
+      runs BERT semantic similarity between their resume text and every active
+      job's title + keywords + description. The top 4 jobs (scoring ≥ 25%)
+      are shown as "Recommended for You" with a "Based on your resume" badge.
+      The top card is labelled "Best Match"; remaining cards show a % match score.
+      If no resume is saved, falls back to "Available Positions" (4 newest jobs).
   - Up to 3 most recent applications with status and composite score.
+  - Quick Apply upload prompt shown in right column when no saved resume.
 
 Browse Jobs:
   - Grid of all active job postings with title, company, location (📍 pin icon),
