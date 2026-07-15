@@ -55,6 +55,19 @@
     </div>
 
     <div>
+        {% if not current_user.saved_resume_filename %}
+        <div class="card" style="margin-bottom:16px;border:1.5px solid #bfdbfe;background:#eff6ff;">
+            <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:14px 16px;">
+                <div style="font-size:28px;">&#x26A1;</div>
+                <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:2px;">Enable Quick Apply</div>
+                    <div style="font-size:12px;color:#3b82f6;line-height:1.5;">Upload your resume once to apply to any job in one click.</div>
+                </div>
+                <a href="{{ url_for('applicant_settings') }}" class="btn btn-sm" style="background:#2563eb;color:white;white-space:nowrap;">&#x2B06; Upload</a>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);border:1.5px solid #fed7aa;">
             <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:16px;">
                 <div style="font-size:32px;">&#x1F4C4;</div>
