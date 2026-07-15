@@ -31,6 +31,10 @@
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Similarity</div>
                     <div class="fw-700" style="font-size:16px;color:var(--green);">{{ app.similarity_score }}%</div>
                 </div>
+                <div style="text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">BERT</div>
+                    <div class="fw-700" style="font-size:16px;color:#0ea5e9;">{{ app.semantic_score }}%</div>
+                </div>
                 <div style="text-align:center;border-left:2px solid var(--border);padding-left:16px;">
                     <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Match Score</div>
                     {% if app.composite_score >= 80 %}
