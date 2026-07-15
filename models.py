@@ -54,6 +54,7 @@ class Application(db.Model):
     keyword_score   = db.Column(db.Float, default=0.0)
     fuzzy_score     = db.Column(db.Float, default=0.0)
     similarity_score= db.Column(db.Float, default=0.0)
+    semantic_score  = db.Column(db.Float, default=0.0)
     composite_score = db.Column(db.Float, default=0.0)
     status          = db.Column(db.String(30), default='submitted')  # submitted, review, shortlisted, rejected
     applied_at      = db.Column(db.DateTime, default=datetime.utcnow)

@@ -91,7 +91,12 @@ with app.app_context():
     bool_true = 'TRUE' if dialect == 'postgresql' else '1'
 
     if inspector.has_table('applications'):
-        existing = [c['name'] for c in inspector.get_columns('applications')]
+        existing_ap = [c['name'] for c in inspector.get_columns('applications')]
+        with db.engine.connect() as conn:
+            if 'semantic_score' not in existing_ap:
+                conn.execute(text('ALTER TABLE applications ADD COLUMN semantic_score FLOAT DEFAULT 0.0'))
+            conn.commit()
+
     if inspector.has_table('users'):
         existing = [c['name'] for c in inspector.get_columns('users')]
         new_cols = {
@@ -390,6 +395,7 @@ def hr_rescore_job(job_id):
         appl.keyword_score    = scores['keyword_score']
         appl.fuzzy_score      = scores['fuzzy_score']
         appl.similarity_score = scores['similarity_score']
+        appl.semantic_score   = scores['semantic_score']
         appl.composite_score  = scores['composite_score']
         appl.status           = 'submitted'
         db.session.add(Notification(
@@ -655,6 +661,7 @@ def applicant_apply(job_id):
             keyword_score=scores['keyword_score'],
             fuzzy_score=scores['fuzzy_score'],
             similarity_score=scores['similarity_score'],
+            semantic_score=scores['semantic_score'],
             composite_score=scores['composite_score'],
             status='submitted'
         )

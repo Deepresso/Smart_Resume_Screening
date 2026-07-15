@@ -41,7 +41,7 @@ DOCX Extraction     : python-docx
 NLP - Keyword       : Plain Python string matching
 NLP - Fuzzy         : rapidfuzz (Levenshtein distance)
 NLP - TF-IDF        : scikit-learn (TfidfVectorizer + cosine_similarity)
-NLP - Semantic      : Removed (was sentence-transformers BERT model — see Section 16 for reason)
+NLP - Semantic      : sentence-transformers (all-MiniLM-L6-v2 BERT model, lazy-loaded)
 Frontend            : HTML5, CSS3 (custom design system), Vanilla JavaScript
 Templating Engine   : Jinja2 (built into Flask)
 
@@ -122,7 +122,7 @@ TABLE: applications
   keyword_score    FLOAT      Score from Keyword Matching algorithm
   fuzzy_score      FLOAT      Score from Fuzzy Matching algorithm
   similarity_score FLOAT      Score from TF-IDF Cosine Similarity
-  semantic_score   FLOAT      (removed — was BERT score, always 0.0, column dropped)
+  semantic_score   FLOAT      Score from BERT semantic similarity (sentence-transformers)
   composite_score  FLOAT      Weighted final score
   status           VARCHAR    'submitted', 'shortlisted', or 'rejected'
   applied_at       DATETIME   Timestamp of submission
@@ -226,6 +226,7 @@ Implementation file: screening.py
 
 The system uses FOUR NLP techniques to score each resume against a job posting.
 All functions are in screening.py and called from compute_scores().
+Final weights: Keyword 35% + Fuzzy 25% + TF-IDF 20% + BERT 20% = 100%
 
 ------------------------------------
 8.1 KEYWORD MATCHING (Weight: 30%)
@@ -291,28 +292,48 @@ Limitation: Treats words as independent tokens, ignores word meaning and context
             calibrated to this range: ≥50% = Strong, ≥35% = Good, ≥20% = Moderate.
 
 ------------------------------------
-8.4 COMPOSITE SCORE FORMULA (3 techniques)
+8.4 BERT SEMANTIC SCORING (Weight: 20%)
 ------------------------------------
-composite = (keyword x 0.40) + (fuzzy x 0.30) + (tfidf x 0.30)
+Function: semantic_score(resume_text, job_description)
+Library  : sentence-transformers (all-MiniLM-L6-v2 model, ~80MB)
+
+How it works:
+  - The resume text and job description are each converted into a dense
+    384-dimensional embedding vector by the pre-trained all-MiniLM-L6-v2
+    BERT model (via sentence-transformers library).
+  - Cosine similarity is computed between the two vectors.
+  - A score of 100% means the two texts are semantically identical.
+  - Text is truncated to ~1000 characters before encoding (BERT 512-token limit).
+
+Example:
+  Resume: "...developed RESTful APIs and microservices using Python..."
+  Job:    "...looking for a software engineer skilled in backend development..."
+  BERT understands "backend development" ≈ "APIs and microservices" → high score
+  TF-IDF would miss this entirely (different words).
+
+Strength  : Understands meaning and synonyms — "engineer" ≈ "developer",
+            "machine learning" ≈ "ML", "led team" ≈ "team leadership"
+Limitation: Input is truncated to ~1000 chars so very long resumes lose context.
+            Scores above 60% are genuinely meaningful; 45–60% is moderate.
+
+Model loading:
+  - The model is lazy-loaded on first use and cached globally (_bert_model).
+  - First request after server start takes ~3–5 seconds to load the model.
+  - Subsequent requests are fast (model stays in memory).
+  - Model files are downloaded automatically from HuggingFace on first run.
+
+------------------------------------
+8.5 COMPOSITE SCORE FORMULA (4 techniques)
+------------------------------------
+composite = (keyword x 0.35) + (fuzzy x 0.25) + (tfidf x 0.20) + (bert x 0.20)
 
 Rationale for weights:
-  - Keyword Matching gets the highest weight (40%) because exact keyword
-    presence is the most direct signal of candidate qualification.
-  - Fuzzy and TF-IDF each get 30% as complementary surface-level techniques.
-
-Note — BERT semantic scoring was implemented and tested during development
-but removed from the final system due to deployment constraints:
-  - The sentence-transformers library (PyTorch-based) requires ~350MB RAM.
-  - Render's free tier only provides 512MB RAM total.
-  - Loading the BERT model during a request caused Linux OOM-killer to
-    send SIGKILL to the worker process (~36 seconds in), resulting in a
-    502 Bad Gateway error for the applicant.
-  - Multiple workarounds were attempted (HuggingFace Inference API via HTTP)
-    but Render's free tier showed intermittent DNS resolution failures for
-    external ML hosting services.
-  - Final decision: remove BERT and use the reliable 3-algorithm system.
-  - semantic_score column has been fully removed from the model and codebase.
-    The column may still exist in older databases but is no longer referenced.
+  - Keyword Matching (35%) — highest weight: exact keyword presence is the
+    most direct signal of candidate qualification.
+  - Fuzzy Matching (25%) — catches typos and abbreviations that exact matching
+    misses.
+  - TF-IDF (20%) — captures overall vocabulary/thematic overlap.
+  - BERT Semantic (20%) — captures meaning and synonyms that keyword/TF-IDF miss.
 
 All scores are stored in the database and displayed to HR on the
 Screening Results page, ranked from highest to lowest composite score.

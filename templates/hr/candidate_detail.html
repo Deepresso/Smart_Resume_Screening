@@ -70,7 +70,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (40%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (35%)</div>
                     <div class="score-pct" style="color:var(--blue);">{{ appl.keyword_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (30%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (25%)</div>
                     <div class="score-pct" style="color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -86,11 +86,19 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (30%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (20%)</div>
                     <div class="score-pct" style="color:var(--green);">{{ appl.similarity_score }}%</div>
                 </div>
-                <div class="progress">
+                <div class="progress" style="margin-bottom:14px;">
                     <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
+                </div>
+
+                <div class="score-row">
+                    <div class="score-name"><span class="score-dot" style="background:var(--orange);"></span>BERT Semantic (20%)</div>
+                    <div class="score-pct" style="color:var(--orange);">{{ appl.semantic_score }}%</div>
+                </div>
+                <div class="progress">
+                    <div class="progress-fill" style="width:{{ appl.semantic_score }}%;background:var(--orange);"></div>
                 </div>
             </div>
         </div>
@@ -155,7 +163,7 @@
 
         <!-- Text Similarity Explanation -->
         <div style="margin-top:20px;">
-            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (30% of score)</div>
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (20% of score)</div>
             <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
                 {% if appl.similarity_score >= 50 %}
                 <span style="color:var(--green);font-weight:700;">Strong thematic match.</span> The resume shares strong vocabulary and topic overlap with the job description — an above-average result for this algorithm.
@@ -167,6 +175,25 @@
                 <span style="color:var(--orange);font-weight:700;">Low thematic overlap.</span> Limited shared vocabulary detected. The candidate may still be suitable — refer to keyword and fuzzy scores.
                 {% endif %}
                 <br><span class="text-muted" style="font-size:12px;">Note: TF-IDF cosine similarity between resumes and job descriptions typically ranges 30–55% due to structural differences in language — this is normal and expected.</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- BERT Semantic Explanation -->
+        <div style="margin-top:20px;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x1F9E0; BERT Semantic Similarity &mdash; {{ appl.semantic_score }}% (20% of score)</div>
+            <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
+                {% if appl.semantic_score >= 75 %}
+                <span style="color:var(--green);font-weight:700;">Very strong semantic match.</span> The resume and job description are highly aligned in meaning — BERT detects strong conceptual relevance.
+                {% elif appl.semantic_score >= 60 %}
+                <span style="color:var(--green);font-weight:700;">Strong semantic match.</span> The resume closely reflects the intent and concepts described in the job posting.
+                {% elif appl.semantic_score >= 45 %}
+                <span style="color:var(--orange);font-weight:700;">Moderate semantic match.</span> Some conceptual alignment detected. The candidate may use different terminology for similar concepts.
+                {% else %}
+                <span style="color:var(--red);font-weight:700;">Low semantic match.</span> The overall meaning of the resume does not closely align with the job description.
+                {% endif %}
+                <br><span class="text-muted" style="font-size:12px;">BERT understands meaning, not just word overlap — "developer" and "engineer" score well together. Unlike TF-IDF, scores above 60% indicate genuine conceptual relevance.</span>
             </div>
         </div>
 

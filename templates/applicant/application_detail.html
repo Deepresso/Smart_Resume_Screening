@@ -58,7 +58,7 @@
             <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
                 <div style="width:36px;height:36px;border-radius:50%;background:{% if appl.composite_score > 0 %}var(--green){% else %}#e2e8f0{% endif %};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;">&#x2713;</div>
                 <div style="font-size:11px;font-weight:700;margin-top:6px;color:{% if appl.composite_score > 0 %}var(--green){% else %}var(--text-muted){% endif %};">NLP Scored</div>
-                <div style="font-size:10px;color:var(--text-muted);">3 techniques applied</div>
+                <div style="font-size:10px;color:var(--text-muted);">4 techniques applied</div>
             </div>
             <div style="flex:1;height:3px;background:{% if appl.status in ['shortlisted','rejected'] %}{% if appl.status == 'shortlisted' %}var(--green){% else %}var(--red){% endif %}{% else %}#e2e8f0{% endif %};margin-bottom:22px;"></div>
             <!-- Step 4: Decision -->
@@ -80,11 +80,11 @@
     </div>
 </div>
 
-<div class="score-grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x1F50D;</div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Keyword Matching</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Keyword Matching <span style="font-weight:400;color:var(--text-muted);">(35%)</span></div>
             <div style="font-size:32px;font-weight:900;color:var(--blue);">{{ appl.keyword_score }}%</div>
             <div class="progress" style="margin:10px 0;">
                 <div class="progress-fill fill-blue" style="width:{{ appl.keyword_score }}%;"></div>
@@ -95,7 +95,7 @@
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x270F;&#xFE0F;</div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Fuzzy Matching</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Fuzzy Matching <span style="font-weight:400;color:var(--text-muted);">(25%)</span></div>
             <div style="font-size:32px;font-weight:900;color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
             <div class="progress" style="margin:10px 0;">
                 <div class="progress-fill" style="width:{{ appl.fuzzy_score }}%;background:#7c3aed;"></div>
@@ -106,12 +106,23 @@
     <div class="card">
         <div class="card-body" style="text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">&#x2728;</div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Text Similarity</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Text Similarity <span style="font-weight:400;color:var(--text-muted);">(20%)</span></div>
             <div style="font-size:32px;font-weight:900;color:var(--green);">{{ appl.similarity_score }}%</div>
             <div class="progress" style="margin:10px 0;">
                 <div class="progress-fill fill-green" style="width:{{ appl.similarity_score }}%;"></div>
             </div>
-            <div class="text-muted text-sm">Thematic alignment between your resume and the job description. A score of 30–55% is normal for this algorithm.</div>
+            <div class="text-muted text-sm">Thematic alignment with the job description. 30–55% is normal for this algorithm.</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body" style="text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">&#x1F9E0;</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;">BERT Semantic <span style="font-weight:400;color:var(--text-muted);">(20%)</span></div>
+            <div style="font-size:32px;font-weight:900;color:var(--orange);">{{ appl.semantic_score }}%</div>
+            <div class="progress" style="margin:10px 0;">
+                <div class="progress-fill" style="width:{{ appl.semantic_score }}%;background:var(--orange);"></div>
+            </div>
+            <div class="text-muted text-sm">AI understands meaning — "developer" and "engineer" still match well.</div>
         </div>
     </div>
 </div>

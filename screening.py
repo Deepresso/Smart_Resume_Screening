@@ -1,9 +1,20 @@
 import re
+import numpy as np
 import fitz  # PyMuPDF
 from docx import Document
 from rapidfuzz import fuzz
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+# Lazy-loaded BERT model — downloaded on first use (~80 MB)
+_bert_model = None
+
+def _get_bert_model():
+    global _bert_model
+    if _bert_model is None:
+        from sentence_transformers import SentenceTransformer
+        _bert_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _bert_model
 
 
 # ── Text Extraction ──────────────────────────────────────────────────────────
@@ -72,6 +83,21 @@ def similarity_score(resume_text, job_description):
         return 0.0
 
 
+def semantic_score(resume_text, job_description):
+    """BERT cosine similarity between resume and job description embeddings."""
+    if not resume_text or not job_description:
+        return 0.0
+    try:
+        model = _get_bert_model()
+        # Truncate to ~1000 chars — BERT has a 512-token limit
+        emb = model.encode([resume_text[:1000], job_description[:1000]])
+        a, b = emb[0], emb[1]
+        score = float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+        return round(max(score, 0.0) * 100, 2)
+    except Exception:
+        return 0.0
+
+
 def keyword_breakdown(resume_text, keywords):
     """Per-keyword found/not-found list."""
     resume_lower = resume_text.lower()
@@ -89,19 +115,21 @@ def fuzzy_breakdown(resume_text, keywords):
 
 
 def compute_scores(resume_text, job_description, keywords):
-    """Run three NLP algorithms and return individual + composite scores."""
+    """Run four NLP algorithms and return individual + composite scores."""
     kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if keywords else []
 
     kw  = keyword_score(resume_text, kw_list)
     fz  = fuzzy_score(resume_text, kw_list)
     sim = similarity_score(resume_text, job_description)
+    sem = semantic_score(resume_text, job_description)
 
-    # Weighted composite: keyword 40%, fuzzy 30%, TF-IDF 30%
-    composite = round((kw * 0.40) + (fz * 0.30) + (sim * 0.30), 2)
+    # Weighted composite: keyword 35%, fuzzy 25%, TF-IDF 20%, BERT 20%
+    composite = round((kw * 0.35) + (fz * 0.25) + (sim * 0.20) + (sem * 0.20), 2)
 
     return {
         'keyword_score':    kw,
         'fuzzy_score':      fz,
         'similarity_score': sim,
+        'semantic_score':   sem,
         'composite_score':  composite,
     }
