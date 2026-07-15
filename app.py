@@ -100,13 +100,16 @@ with app.app_context():
     if inspector.has_table('users'):
         existing = [c['name'] for c in inspector.get_columns('users')]
         new_cols = {
-            'phone':       'VARCHAR(20)',
-            'address1':    'VARCHAR(200)',
-            'address2':    'VARCHAR(200)',
-            'postcode':    'VARCHAR(10)',
-            'state':       'VARCHAR(50)',
-            'verify_code': 'VARCHAR(6)',
-            'is_verified': f'BOOLEAN DEFAULT {bool_true}',
+            'phone':                 'VARCHAR(20)',
+            'address1':              'VARCHAR(200)',
+            'address2':              'VARCHAR(200)',
+            'postcode':              'VARCHAR(10)',
+            'state':                 'VARCHAR(50)',
+            'verify_code':           'VARCHAR(6)',
+            'is_verified':           f'BOOLEAN DEFAULT {bool_true}',
+            'saved_resume_path':     'VARCHAR(255)',
+            'saved_resume_filename': 'VARCHAR(255)',
+            'saved_resume_text':     'TEXT',
         }
         with db.engine.connect() as conn:
             for col, col_type in new_cols.items():
@@ -639,18 +642,29 @@ def applicant_apply(job_id):
         if Application.query.filter_by(user_id=current_user.id, job_id=job_id).first():
             flash('You have already applied for this job.')
             return render_template('applicant/apply_job.html', job=job)
-        file = request.files.get('resume')
-        if not file or file.filename == '':
-            flash('Please upload your resume.')
-            return render_template('applicant/apply_job.html', job=job)
-        if not allowed_file(file.filename):
-            flash('Only PDF and DOCX files are accepted.')
-            return render_template('applicant/apply_job.html', job=job)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        filename = secure_filename(f"{current_user.id}_{job_id}_{file.filename}")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        resume_text = extract_text(filepath)
+
+        resume_choice = request.form.get('resume_choice', 'upload')
+
+        if resume_choice == 'saved':
+            if not current_user.saved_resume_text:
+                flash('No saved resume found in your profile. Please upload a resume.')
+                return render_template('applicant/apply_job.html', job=job)
+            filename    = current_user.saved_resume_path
+            resume_text = current_user.saved_resume_text
+        else:
+            file = request.files.get('resume')
+            if not file or file.filename == '':
+                flash('Please upload your resume.')
+                return render_template('applicant/apply_job.html', job=job)
+            if not allowed_file(file.filename):
+                flash('Only PDF and DOCX files are accepted.')
+                return render_template('applicant/apply_job.html', job=job)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            filename = secure_filename(f"{current_user.id}_{job_id}_{file.filename}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            resume_text = extract_text(filepath)
+
         scores = compute_scores(resume_text, job.description, job.keywords or '')
         application = Application(
             user_id=current_user.id,
@@ -728,6 +742,39 @@ def applicant_settings():
             db.session.commit()
             flash('Settings saved successfully.')
     return render_template('applicant/settings.html')
+
+@app.route('/applicant/settings/resume', methods=['POST'])
+@login_required
+@applicant_required
+def applicant_save_resume():
+    file = request.files.get('resume')
+    if not file or not file.filename or not allowed_file(file.filename):
+        flash('Please upload a valid PDF or DOCX file.')
+        return redirect(url_for('applicant_settings'))
+    filename = secure_filename(f'profile_{current_user.id}_{file.filename}')
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    resume_text = extract_text(filepath)
+    if not resume_text:
+        flash('Could not extract text from that file. Try a different PDF or DOCX.')
+        return redirect(url_for('applicant_settings'))
+    current_user.saved_resume_path     = filename
+    current_user.saved_resume_filename = file.filename
+    current_user.saved_resume_text     = resume_text
+    db.session.commit()
+    flash('Resume saved to your profile successfully.')
+    return redirect(url_for('applicant_settings'))
+
+@app.route('/applicant/settings/resume/delete', methods=['POST'])
+@login_required
+@applicant_required
+def applicant_delete_resume():
+    current_user.saved_resume_path     = None
+    current_user.saved_resume_filename = None
+    current_user.saved_resume_text     = None
+    db.session.commit()
+    flash('Saved resume removed from your profile.')
+    return redirect(url_for('applicant_settings'))
 
 @app.route('/applicant/upload')
 @login_required

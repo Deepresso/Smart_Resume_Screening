@@ -14,6 +14,43 @@
 {% endwith %}
 
 <div style="max-width:520px;">
+
+    <!-- My Resume Card -->
+    <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+            <div class="card-title">&#x1F4C4; My Resume</div>
+            {% if current_user.saved_resume_filename %}
+            <span class="stat-badge badge-blue">Saved</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if current_user.saved_resume_filename %}
+            <div style="display:flex;align-items:center;gap:12px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+                <span style="font-size:24px;">&#x1F4C3;</span>
+                <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:700;color:#166534;">{{ current_user.saved_resume_filename }}</div>
+                    <div style="font-size:11px;color:#4ade80;margin-top:2px;">Ready for Quick Apply</div>
+                </div>
+                <form method="POST" action="{{ url_for('applicant_delete_resume') }}" onsubmit="return confirm('Remove saved resume?')">
+                    <button type="submit" class="btn btn-outline btn-sm" style="border-color:var(--red);color:var(--red);">Remove</button>
+                </form>
+            </div>
+            <p class="text-muted text-sm" style="margin-bottom:12px;">Upload a new file to replace your current saved resume.</p>
+            {% else %}
+            <p class="text-muted text-sm" style="margin-bottom:12px;">Upload your resume once and use it for Quick Apply on any job.</p>
+            {% endif %}
+            <form method="POST" action="{{ url_for('applicant_save_resume') }}" enctype="multipart/form-data">
+                <div class="upload-box" style="padding:16px;cursor:pointer;margin-bottom:12px;" onclick="document.getElementById('profileResumeInput').click()">
+                    <div class="upload-icon" style="font-size:20px;">&#x1F4E4;</div>
+                    <div class="upload-title" id="profileUploadLabel" style="font-size:13px;">Click to select a resume</div>
+                    <div class="upload-sub">PDF or DOCX &middot; Max 10MB</div>
+                    <input type="file" name="resume" id="profileResumeInput" accept=".pdf,.docx" style="display:none;" onchange="document.getElementById('profileUploadLabel').textContent=this.files[0].name">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">&#x2B06; Save Resume to Profile</button>
+            </form>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-header"><div class="card-title">Personal Information</div></div>
         <div class="card-body">

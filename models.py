@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     state       = db.Column(db.String(50))
     is_verified = db.Column(db.Boolean, default=False)
     verify_code = db.Column(db.String(6))
+    saved_resume_path     = db.Column(db.String(255))   # filename in uploads/
+    saved_resume_filename = db.Column(db.String(255))   # original name shown to user
+    saved_resume_text     = db.Column(db.Text)          # extracted text for NLP
 
     job_postings = db.relationship('JobPosting', backref='creator', lazy=True)
     applications = db.relationship('Application', backref='applicant', lazy=True)

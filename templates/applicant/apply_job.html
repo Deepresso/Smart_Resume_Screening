@@ -57,29 +57,52 @@
                     <label>Cover Letter (Optional)</label>
                     <textarea name="cover_letter" rows="4" placeholder="Tell us why you're a great fit for this role..."></textarea>
                 </div>
-                <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                        <span style="font-size:16px;">&#x1F4C4;</span>
-                        <span style="font-size:13px;font-weight:700;color:#9a3412;">Not sure how to structure your resume?</span>
-                    </div>
-                    <p style="font-size:12px;color:#78350f;line-height:1.6;margin-bottom:10px;">
-                        Download our resume template to maximise your match score. It includes all the recommended sections and tips on which keywords to include.
+
+                <!-- Resume choice -->
+                <div class="form-group">
+                    <label>Resume *</label>
+
+                    {% if current_user.saved_resume_filename %}
+                    <!-- Saved resume option -->
+                    <label style="display:flex;align-items:center;gap:12px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;cursor:pointer;margin-bottom:10px;">
+                        <input type="radio" name="resume_choice" value="saved" id="choiceSaved" checked onchange="toggleUpload(this.value)" style="width:16px;height:16px;accent-color:var(--green);">
+                        <div>
+                            <div style="font-size:13px;font-weight:700;color:#166534;">&#x26A1; Quick Apply — use saved resume</div>
+                            <div style="font-size:11px;color:#4ade80;margin-top:2px;">{{ current_user.saved_resume_filename }}</div>
+                        </div>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:12px;background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;margin-bottom:10px;">
+                        <input type="radio" name="resume_choice" value="upload" id="choiceUpload" onchange="toggleUpload(this.value)" style="width:16px;height:16px;accent-color:var(--orange);">
+                        <div style="font-size:13px;font-weight:600;color:var(--navy);">&#x1F4E4; Upload a different resume</div>
+                    </label>
+                    {% else %}
+                    <input type="hidden" name="resume_choice" value="upload">
+                    <p class="text-muted text-sm" style="margin-bottom:8px;">
+                        No saved resume yet. <a href="{{ url_for('applicant_settings') }}" style="color:var(--orange);">Save one in Settings</a> to enable Quick Apply.
                     </p>
-                    <a href="{{ url_for('static', filename='downloads/resume_template.docx') }}" download class="btn btn-outline btn-sm" style="border-color:#f97316;color:#c2410c;">
-                        &#x2B07; Download Resume Template (.docx)
-                    </a>
+                    {% endif %}
+
+                    <!-- File upload box (hidden when saved resume is selected) -->
+                    <div id="uploadBox" style="display:{% if current_user.saved_resume_filename %}none{% else %}block{% endif %};">
+                        <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:10px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                <span style="font-size:14px;">&#x1F4C4;</span>
+                                <span style="font-size:12px;font-weight:700;color:#9a3412;">Need a resume template?</span>
+                            </div>
+                            <a href="{{ url_for('static', filename='downloads/resume_template.docx') }}" download class="btn btn-outline btn-sm" style="border-color:#f97316;color:#c2410c;">
+                                &#x2B07; Download Template (.docx)
+                            </a>
+                        </div>
+                        <div class="upload-box" style="padding:20px;cursor:pointer;" onclick="document.getElementById('resumeInput').click()">
+                            <div class="upload-icon">&#x1F4E4;</div>
+                            <div class="upload-title" id="uploadLabel">Click to select your resume</div>
+                            <div class="upload-sub">PDF or DOCX &middot; Max 10MB</div>
+                            <input type="file" name="resume" id="resumeInput" accept=".pdf,.docx" style="display:none;" onchange="document.getElementById('uploadLabel').textContent=this.files[0].name">
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Upload Resume *</label>
-                    <div class="upload-box" style="padding:20px;cursor:pointer;" onclick="document.getElementById('resumeInput').click()">
-                        <div class="upload-icon">&#x1F4E4;</div>
-                        <div class="upload-title" id="uploadLabel">Click to select your resume</div>
-                        <div class="upload-sub">Supports PDF, DOCX &middot; Max 10MB</div>
-                        <input type="file" name="resume" id="resumeInput" accept=".pdf,.docx" style="display:none;" onchange="showFilename(this)">
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full">Submit Application</button>
+                <button type="submit" class="btn btn-primary btn-full">Submit Application &#x2192;</button>
                 <p class="form-hint" style="text-align:center;margin-top:10px;">Your resume will be automatically screened after submission.</p>
             </form>
         </div>
@@ -87,10 +110,8 @@
 </div>
 
 <script>
-function showFilename(input) {
-    if (input.files.length > 0) {
-        document.getElementById('uploadLabel').textContent = input.files[0].name;
-    }
+function toggleUpload(choice) {
+    document.getElementById('uploadBox').style.display = choice === 'upload' ? 'block' : 'none';
 }
 </script>
 {% endblock %}

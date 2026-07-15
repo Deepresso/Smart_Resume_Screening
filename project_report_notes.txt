@@ -93,11 +93,14 @@ Smart_Resume_Screening/
 Three tables are used, defined in models.py using SQLAlchemy ORM.
 
 TABLE: users
-  id         INTEGER PRIMARY KEY
-  name       VARCHAR(100)   Full name of the user
-  email      VARCHAR(150)   Unique login email
-  password   VARCHAR(255)   bcrypt-hashed password
-  role       VARCHAR(20)    Either 'hr' or 'applicant'
+  id                    INTEGER PRIMARY KEY
+  name                  VARCHAR(100)   Full name of the user
+  email                 VARCHAR(150)   Unique login email
+  password              VARCHAR(255)   bcrypt-hashed password
+  role                  VARCHAR(20)    Either 'hr' or 'applicant'
+  saved_resume_path     VARCHAR(255)   Filename of profile resume in uploads/ (Quick Apply)
+  saved_resume_filename VARCHAR(255)   Original filename shown to the user
+  saved_resume_text     TEXT           Extracted text from profile resume (used for NLP)
 
 TABLE: job_postings
   id          INTEGER PRIMARY KEY
@@ -226,7 +229,7 @@ Implementation file: screening.py
 
 The system uses FOUR NLP techniques to score each resume against a job posting.
 All functions are in screening.py and called from compute_scores().
-Final weights: Keyword 35% + Fuzzy 25% + TF-IDF 20% + BERT 20% = 100%
+Final weights: Keyword 40% + BERT 30% + Fuzzy 20% + TF-IDF 10% = 100%
 
 ------------------------------------
 8.1 KEYWORD MATCHING (Weight: 30%)
@@ -470,9 +473,16 @@ Browse Jobs:
     types — implemented with client-side JavaScript (no page reload needed).
     The result counter updates dynamically to show matching jobs.
 
-Apply for Job:
-  - Shows full job description and screening keywords.
-  - Form accepts cover letter (optional) and resume file (PDF or DOCX).
+Apply for Job (with Quick Apply):
+  - Shows full job description, screening keywords, and salary range.
+  - If the applicant has a saved resume in their profile, two radio options appear:
+      "Quick Apply — use saved resume: [filename]" (pre-selected, green card)
+      "Upload a different resume" (shows file upload box when selected)
+  - If no saved resume exists, a plain upload box is shown with a link to Settings.
+  - JavaScript toggleUpload() shows/hides the upload box based on radio selection.
+  - Form submits resume_choice ('saved' or 'upload') to the server.
+      'saved' → uses stored resume_text from users.saved_resume_text
+      'upload' → reads the uploaded file as before
   - On submission, NLP scoring runs automatically.
   - Duplicate applications for the same job are blocked.
 
@@ -533,6 +543,18 @@ In-App Notification Bell:
   - Notification model: id, user_id (FK), message, link, is_read, created_at.
   - Table created automatically by db.create_all() on app startup.
 
+Resume Profile (Quick Apply setup):
+  - Applicants can upload a resume once to their profile from the Settings page.
+  - A "My Resume" card appears above Personal Information in Settings.
+  - If a resume is saved: shows filename in a green box with "Ready for Quick Apply"
+    and a Remove button to clear it.
+  - Upload form always visible (to save or replace the current saved resume).
+  - Routes:
+      POST /applicant/settings/resume        — saves resume; extracts text via NLP pipeline
+      POST /applicant/settings/resume/delete — clears all 3 saved_resume_* columns
+  - Stored in three users table columns: saved_resume_path, saved_resume_filename,
+    saved_resume_text (auto-migrated on server startup if columns are missing).
+
 Settings:
   - Applicant can update name, email, and password.
 
@@ -570,19 +592,26 @@ Both decorators are used alongside @login_required to ensure:
 
 Database Auto-Migration:
   - app.py runs a startup migration block that inspects existing tables and
-    applies ALTER TABLE for any missing columns (phone, address1, address2,
-    postcode, state, is_verified, verify_code on the users table).
-  - The semantic_score migration was removed when BERT was dropped.
+    applies ALTER TABLE for any missing columns.
+  - users table: phone, address1, address2, postcode, state, is_verified,
+    verify_code, saved_resume_path, saved_resume_filename, saved_resume_text
+  - job_postings table: salary_min, salary_max
+  - applications table: semantic_score
 
 
 --------------------------------------------------------------------------------
 13. SCORING WEIGHT EVOLUTION
 --------------------------------------------------------------------------------
-Final system (3 techniques):
+Initial weights (3 techniques, before BERT re-enabled):
   Keyword 40%  +  Fuzzy 30%  +  TF-IDF 30%  =  100%
 
-Note: BERT (4th technique) was implemented and tested but removed due to
-Render free tier RAM constraints (see Section 8.4 for full explanation).
+Final system (4 techniques — BERT re-enabled for localhost):
+  Keyword 40%  +  BERT 30%  +  Fuzzy 20%  +  TF-IDF 10%  =  100%
+
+BERT was originally removed due to Render free-tier RAM limits. After switching
+to localhost (no RAM constraint), BERT was re-enabled with lazy loading.
+Fuzzy and TF-IDF weights were reduced to accommodate BERT's 30% allocation,
+justified by BERT being a strict superset of TF-IDF's capabilities.
 
 
 --------------------------------------------------------------------------------
@@ -769,10 +798,11 @@ Very small (≤380px):
 
 Current Limitations:
   1. Only one HR account is supported (the seeded admin account).
-  2. Uploaded resume files are lost on Render redeploy (ephemeral filesystem).
-  3. Only one concurrent resume submission at a time (single gunicorn worker).
-  4. BERT semantic scoring was removed due to Render free tier RAM constraints
-     (see Section 8.4). Running on a paid server would re-enable it.
+  2. Uploaded resume files are stored in a local uploads/ folder — not
+     backed up to cloud storage.
+  3. BERT input is truncated to ~1000 characters; very long resumes may lose
+     lower sections during encoding.
+  4. Quick Apply stores only the most recently saved resume — no version history.
 
 Possible Future Improvements:
   1. Store uploaded resumes in cloud storage (AWS S3 / Cloudinary) for persistence.
