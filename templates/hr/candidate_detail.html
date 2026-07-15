@@ -70,7 +70,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (35%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--blue);"></span>Keyword Matching (40%)</div>
                     <div class="score-pct" style="color:var(--blue);">{{ appl.keyword_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (25%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:#7c3aed;"></span>Fuzzy Matching (20%)</div>
                     <div class="score-pct" style="color:#7c3aed;">{{ appl.fuzzy_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -86,7 +86,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (20%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--green);"></span>Text Similarity (10%)</div>
                     <div class="score-pct" style="color:var(--green);">{{ appl.similarity_score }}%</div>
                 </div>
                 <div class="progress" style="margin-bottom:14px;">
@@ -94,7 +94,7 @@
                 </div>
 
                 <div class="score-row">
-                    <div class="score-name"><span class="score-dot" style="background:var(--orange);"></span>BERT Semantic (20%)</div>
+                    <div class="score-name"><span class="score-dot" style="background:var(--orange);"></span>BERT Semantic (30%)</div>
                     <div class="score-pct" style="color:var(--orange);">{{ appl.semantic_score }}%</div>
                 </div>
                 <div class="progress">
@@ -163,7 +163,7 @@
 
         <!-- Text Similarity Explanation -->
         <div style="margin-top:20px;">
-            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (20% of score)</div>
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x2728; Text Similarity (TF-IDF) &mdash; {{ appl.similarity_score }}% (10% of score)</div>
             <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
                 {% if appl.similarity_score >= 50 %}
                 <span style="color:var(--green);font-weight:700;">Strong thematic match.</span> The resume shares strong vocabulary and topic overlap with the job description — an above-average result for this algorithm.
@@ -182,7 +182,7 @@
 
         <!-- BERT Semantic Explanation -->
         <div style="margin-top:20px;">
-            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x1F9E0; BERT Semantic Similarity &mdash; {{ appl.semantic_score }}% (20% of score)</div>
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;">&#x1F9E0; BERT Semantic Similarity &mdash; {{ appl.semantic_score }}% (30% of score)</div>
             <div style="font-size:13px;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 16px;">
                 {% if appl.semantic_score >= 75 %}
                 <span style="color:var(--green);font-weight:700;">Very strong semantic match.</span> The resume and job description are highly aligned in meaning — BERT detects strong conceptual relevance.

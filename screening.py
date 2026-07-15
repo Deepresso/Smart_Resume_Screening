@@ -123,8 +123,8 @@ def compute_scores(resume_text, job_description, keywords):
     sim = similarity_score(resume_text, job_description)
     sem = semantic_score(resume_text, job_description)
 
-    # Weighted composite: keyword 35%, fuzzy 25%, TF-IDF 20%, BERT 20%
-    composite = round((kw * 0.35) + (fz * 0.25) + (sim * 0.20) + (sem * 0.20), 2)
+    # Weighted composite: keyword 40%, fuzzy 20%, TF-IDF 10%, BERT 30%
+    composite = round((kw * 0.40) + (fz * 0.20) + (sim * 0.10) + (sem * 0.30), 2)
 
     return {
         'keyword_score':    kw,
