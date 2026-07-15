@@ -466,12 +466,18 @@ Dashboard:
   - Up to 3 most recent applications with status and composite score.
 
 Browse Jobs:
-  - Grid of all active job postings with title, company, location, keywords,
-    and salary range (shown in green if set by HR: "RM 3,000 – 6,000 / month").
+  - Grid of all active job postings with title, company, location (📍 pin icon),
+    keywords, and salary range (shown in green if set by HR).
   - Clicking a job goes to the application page.
-  - Live search bar filters jobs by title, company, or keywords as the user
-    types — implemented with client-side JavaScript (no page reload needed).
-    The result counter updates dynamically to show matching jobs.
+  - Two live search bars filter jobs as the user types (no page reload):
+      1. "Job title or skill" — searches title, company, and keywords
+      2. "Location" — searches the job's location field
+  - Both filters are applied together (AND logic).
+  - Matching is token-based fuzzy: query is split by spaces and each token
+    must appear somewhere in the field, so partial/related terms work
+    (e.g. "python dev" matches "Python Developer", "KL" matches "Kuala Lumpur").
+  - The result counter under the page title updates dynamically.
+  - A "No jobs match your search" message appears when filters return nothing.
 
 Apply for Job (with Quick Apply):
   - Shows full job description, screening keywords, and salary range.
