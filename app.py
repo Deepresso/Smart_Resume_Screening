@@ -368,6 +368,44 @@ def hr_delete_job(job_id):
     db.session.commit()
     return redirect(url_for('hr_jobs'))
 
+@app.route('/hr/analytics')
+@login_required
+@hr_required
+def hr_analytics():
+    jobs = JobPosting.query.filter_by(created_by=current_user.id).all()
+    job_ids = [j.id for j in jobs]
+    all_apps = Application.query.filter(Application.job_id.in_(job_ids)).all() if job_ids else []
+
+    # Score distribution buckets
+    buckets = {'0–20': 0, '20–40': 0, '40–60': 0, '60–80': 0, '80–100': 0}
+    for a in all_apps:
+        s = a.composite_score or 0
+        if s < 20:    buckets['0–20']   += 1
+        elif s < 40:  buckets['20–40']  += 1
+        elif s < 60:  buckets['40–60']  += 1
+        elif s < 80:  buckets['60–80']  += 1
+        else:         buckets['80–100'] += 1
+
+    # Apps per job (top 8 by count)
+    apps_per_job = sorted(
+        [{'title': j.title, 'count': len([a for a in all_apps if a.job_id == j.id])} for j in jobs],
+        key=lambda x: x['count'], reverse=True
+    )[:8]
+
+    # Status breakdown
+    status_counts = {
+        'Shortlisted': sum(1 for a in all_apps if a.status == 'shortlisted'),
+        'Rejected':    sum(1 for a in all_apps if a.status == 'rejected'),
+        'Pending':     sum(1 for a in all_apps if a.status == 'submitted'),
+    }
+
+    avg_score = round(sum(a.composite_score or 0 for a in all_apps) / len(all_apps), 1) if all_apps else 0
+
+    return render_template('hr/analytics.html',
+        jobs=jobs, all_apps=all_apps,
+        buckets=buckets, apps_per_job=apps_per_job,
+        status_counts=status_counts, avg_score=avg_score)
+
 @app.route('/hr/screening')
 @login_required
 @hr_required
@@ -531,6 +569,43 @@ def hr_reject_application(app_id):
              f"We wish you the best in your job search.")
     threading.Thread(target=send_email_async, args=(email, f'Application Update — {job} at {company}', html, plain), daemon=True).start()
     return redirect(request.referrer or url_for('hr_candidates'))
+
+@app.route('/hr/compare')
+@login_required
+@hr_required
+def hr_compare():
+    a_id = request.args.get('a', type=int)
+    b_id = request.args.get('b', type=int)
+    if not a_id or not b_id:
+        return redirect(url_for('hr_screening_index'))
+    appl_a = Application.query.get_or_404(a_id)
+    appl_b = Application.query.get_or_404(b_id)
+    return render_template('hr/compare.html', appl_a=appl_a, appl_b=appl_b)
+
+@app.route('/hr/jobs/<int:job_id>/bulk_action', methods=['POST'])
+@login_required
+@hr_required
+def hr_bulk_action(job_id):
+    action = request.form.get('action')
+    app_ids = request.form.getlist('app_ids', type=int)
+    if action not in ('shortlist', 'reject') or not app_ids:
+        flash('Invalid bulk action.')
+        return redirect(url_for('hr_screening_results', job_id=job_id))
+    new_status = 'shortlisted' if action == 'shortlist' else 'rejected'
+    for appl in Application.query.filter(Application.id.in_(app_ids)).all():
+        appl.status = new_status
+        if action == 'shortlist':
+            msg = f'🎉 Your application for {appl.job.title} at {appl.job.company} has been shortlisted!'
+        else:
+            msg = f'📋 A decision has been made on your {appl.job.title} application at {appl.job.company}.'
+        db.session.add(Notification(
+            user_id=appl.user_id,
+            message=msg,
+            link=url_for('applicant_application_detail', app_id=appl.id)
+        ))
+    db.session.commit()
+    flash(f'{len(app_ids)} application{"s" if len(app_ids) != 1 else ""} {"shortlisted" if action == "shortlist" else "rejected"}.')
+    return redirect(url_for('hr_screening_results', job_id=job_id))
 
 @app.route('/hr/candidates/<int:candidate_id>')
 @login_required
@@ -745,9 +820,11 @@ def applicant_applications():
 def applicant_application_detail(app_id):
     appl = Application.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
     all_apps = Application.query.filter_by(job_id=appl.job_id).order_by(Application.composite_score.desc()).all()
-    rank = next((i + 1 for i, a in enumerate(all_apps) if a.id == appl.id), 1)
+    rank  = next((i + 1 for i, a in enumerate(all_apps) if a.id == appl.id), 1)
     total = len(all_apps)
-    return render_template('applicant/application_detail.html', appl=appl, rank=rank, total=total)
+    kw_list  = [k.strip() for k in (appl.job.keywords or '').split(',') if k.strip()]
+    kw_detail = keyword_breakdown(appl.resume_text or '', kw_list)
+    return render_template('applicant/application_detail.html', appl=appl, rank=rank, total=total, kw_detail=kw_detail)
 
 @app.route('/applicant/notifications/<int:notif_id>/read')
 @login_required

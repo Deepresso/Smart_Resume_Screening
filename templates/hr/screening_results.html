@@ -51,11 +51,38 @@
 </div>
 {% endif %}
 
+<!-- Bulk action bar (hidden until checkboxes selected) -->
+<div id="bulk-bar" style="display:none;position:sticky;top:0;z-index:100;background:var(--navy);color:white;border-radius:10px;padding:12px 18px;margin-bottom:16px;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span id="sel-count" style="font-size:13px;font-weight:700;">0 selected</span>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="compare-btn" onclick="doCompare()" disabled
+            style="background:#0ea5e9;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;opacity:0.5;">
+            &#x21C6; Compare (select 2)
+        </button>
+        <form id="bulk-form" method="POST" action="{{ url_for('hr_bulk_action', job_id=job.id) }}" style="display:contents;">
+            <input type="hidden" name="action" id="bulk-action-input" value="">
+            <div id="bulk-ids-container"></div>
+            <button type="button" onclick="submitBulk('shortlist')"
+                style="background:#10b981;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+                &#x2713; Shortlist Selected
+            </button>
+            <button type="button" onclick="submitBulk('reject')"
+                style="background:#ef4444;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+                &#x2715; Reject Selected
+            </button>
+        </form>
+        <button onclick="clearAll()" style="background:transparent;color:#94a3b8;border:1px solid #475569;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;">
+            Clear
+        </button>
+    </div>
+</div>
+
 <div class="card">
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th style="width:32px;"><input type="checkbox" id="select-all" onchange="toggleAll(this)" title="Select all"></th>
                     <th style="width:40px;">Rank</th>
                     <th>Candidate</th>
                     <th>Composite Score</th>
@@ -70,6 +97,7 @@
             <tbody>
                 {% for app in applications %}
                 <tr>
+                    <td><input type="checkbox" class="row-cb" value="{{ app.id }}" onchange="updateBar()"></td>
                     <td>
                         <div class="rank-num rank-{{ loop.index }}">#{{ loop.index }}</div>
                     </td>
@@ -112,7 +140,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
+                    <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
                         No applications yet for this job posting.
                     </td>
                 </tr>
@@ -132,4 +160,48 @@
         </span>
     </div>
 </div>
+
+<script>
+function getChecked() {
+    return Array.from(document.querySelectorAll('.row-cb:checked'));
+}
+function updateBar() {
+    const checked = getChecked();
+    const n = checked.length;
+    const bar = document.getElementById('bulk-bar');
+    const btn = document.getElementById('compare-btn');
+    bar.style.display = n > 0 ? 'flex' : 'none';
+    document.getElementById('sel-count').textContent = n + ' selected';
+    btn.disabled = n !== 2;
+    btn.style.opacity = n === 2 ? '1' : '0.5';
+    btn.textContent = n === 2 ? '⇆ Compare Selected' : '⇆ Compare (select 2)';
+}
+function toggleAll(cb) {
+    document.querySelectorAll('.row-cb').forEach(c => c.checked = cb.checked);
+    updateBar();
+}
+function clearAll() {
+    document.querySelectorAll('.row-cb').forEach(c => c.checked = false);
+    document.getElementById('select-all').checked = false;
+    updateBar();
+}
+function doCompare() {
+    const ids = getChecked().map(c => c.value);
+    if (ids.length !== 2) return;
+    window.location.href = "{{ url_for('hr_compare') }}?a=" + ids[0] + "&b=" + ids[1];
+}
+function submitBulk(action) {
+    const ids = getChecked().map(c => c.value);
+    if (!ids.length) return;
+    document.getElementById('bulk-action-input').value = action;
+    const container = document.getElementById('bulk-ids-container');
+    container.innerHTML = '';
+    ids.forEach(id => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = 'app_ids'; inp.value = id;
+        container.appendChild(inp);
+    });
+    document.getElementById('bulk-form').submit();
+}
+</script>
 {% endblock %}

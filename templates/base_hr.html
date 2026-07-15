@@ -39,6 +39,10 @@
                 <span class="nav-item-icon">&#x2728;</span>
                 <span>Screening Results</span>
             </a>
+            <a href="{{ url_for('hr_analytics') }}" class="nav-item {% if request.endpoint == 'hr_analytics' %}active{% endif %}">
+                <span class="nav-item-icon">&#x1F4C8;</span>
+                <span>Analytics</span>
+            </a>
             <div class="sidebar-section">Management</div>
             <a href="{{ url_for('hr_user_management') }}" class="nav-item {% if request.endpoint in ['hr_user_management','hr_edit_user'] %}active{% endif %}">
                 <span class="nav-item-icon">&#x1F464;</span>

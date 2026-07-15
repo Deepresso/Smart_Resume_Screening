@@ -68,9 +68,11 @@ Smart_Resume_Screening/
       new_job_posting.html  - Create new job posting with keyword tags
       edit_job_posting.html - Edit existing job posting
       screening_index.html  - Select a job to view its screening results
-      screening_results.html - Ranked candidates table with all 4 scores
+      screening_results.html - Ranked candidates table with all 4 scores + checkboxes
       candidate_detail.html  - Individual candidate profile + score breakdown
       candidates.html        - All candidates across all jobs
+      analytics.html         - HR analytics: score distribution, status chart, apps per job
+      compare.html           - Side-by-side candidate comparison view
       settings.html          - HR account settings (name, email, password)
     applicant/
       dashboard.html         - Applicant homepage with jobs and applications
@@ -447,6 +449,47 @@ Email Notifications (Shortlist / Reject):
       Shortlist: "Application Update — You have been shortlisted for {job}"
       Reject:    "Application Update — {job} at {company}"
 
+Analytics Page:
+  - Route: GET /hr/analytics (hr_analytics)
+  - Four headline stat cards: Job Postings, Total Applications, Shortlisted, Avg Match Score.
+  - Score Distribution: horizontal CSS bar chart with 5 buckets (0–20, 20–40, 40–60,
+    60–80, 80–100). Each bar is colour-coded red → green. Shows applicant count per bucket.
+  - Application Status: stacked bar chart (green = shortlisted, amber = pending,
+    red = rejected) with exact counts, percentages, and a shortlist rate summary.
+  - Applications per Job: horizontal orange gradient bars, up to 8 most popular jobs,
+    job titles truncated, count shown inside and beside each bar.
+  - All charts are pure CSS — no external chart library required.
+
+Candidate Comparison:
+  - Route: GET /hr/compare?a=<app_id>&b=<app_id> (hr_compare)
+  - Template: templates/hr/compare.html
+  - Shows two candidates side by side with avatar badges (orange vs purple).
+  - Trophy label and green border highlight the candidate with the higher composite score.
+  - Score Breakdown section: for each of the 4 algorithms (Keyword 40%, BERT 30%,
+    Fuzzy 20%, TF-IDF 10%), two horizontal bars are rendered — one per candidate.
+    The candidate who wins each metric gets an upward triangle marker (▲).
+  - Bottom section: shortlist/reject action buttons for each candidate so HR can
+    act immediately from the comparison page.
+  - Accessed via checkbox selection on the Screening Results page (see below).
+
+Bulk Actions on Screening Results:
+  - Each candidate row in screening_results.html now has a checkbox (leftmost column).
+  - A "Select All" checkbox in the table header toggles all rows.
+  - A sticky action bar slides in at the top of the page when one or more rows
+    are checked. It shows:
+      · Count of selected candidates
+      · "Compare Selected" button — enabled only when exactly 2 rows are checked;
+        navigates to /hr/compare?a=<id>&b=<id>
+      · "Shortlist Selected" button — POSTs to hr_bulk_action route
+      · "Reject Selected" button — POSTs to hr_bulk_action route
+      · "Clear" button — deselects all checkboxes and hides the bar
+  - Route: POST /hr/jobs/<job_id>/bulk_action (hr_bulk_action)
+    Accepts: action ('shortlist'/'reject') + list of app_ids
+    Sets status on all selected Application records in one DB transaction.
+    Creates in-app Notification for each affected applicant.
+    Flash message confirms: "N application(s) shortlisted/rejected."
+  - No email is sent for bulk actions (email is reserved for individual decisions).
+
 Candidates Page:
   - All applicants across all HR's jobs, ordered by composite score.
   - Includes a View button linking to the candidate detail page.
@@ -513,7 +556,8 @@ My Applications:
     Rejected = red (.status-rejected), Submitted = orange (.status-submitted).
 
 Application Detail:
-  - Shows 3 NLP scores with progress bars: Keyword (40%), Fuzzy (30%), TF-IDF (30%).
+  - Shows all 4 NLP scores with progress bars: Keyword (40%), BERT Semantic (30%),
+    Fuzzy Matching (20%), Text Similarity (10%).
   - Application Progress Timeline: a horizontal 4-step indicator showing
       Step 1: Submitted (always green)
       Step 2: Resume Parsed (green if resume text was extracted)
@@ -527,7 +571,17 @@ Application Detail:
       Rejected    → notification message
       Submitted   → under review message
   - Rank among all applicants for that job.
-  - Job keywords shown for reference (so applicant can improve their resume).
+  - Keyword Analysis card (replaces plain keyword list):
+      Uses keyword_breakdown() from screening.py to compare the applicant's
+      resume_text against the job's keyword list.
+      Found keywords shown as green pills with ✓ checkmark.
+      Missing keywords shown as red pills with ✗ mark.
+      Count displayed: "X/Y keywords matched".
+      If missing keywords exist, a tip is shown:
+        "💡 Add these keywords to your resume to improve your match score."
+      If all keywords matched: "🏆 Your resume contains all required keywords!"
+      Route: applicant_application_detail passes kw_detail (list of {keyword, found})
+      computed via keyword_breakdown(appl.resume_text, kw_list) from screening.py.
 
 Resume Template Download:
   - Applicants can download a pre-built resume template (.docx) to help them
@@ -826,9 +880,9 @@ Possible Future Improvements:
   1. Store uploaded resumes in cloud storage (AWS S3 / Cloudinary) for persistence.
   2. Add resume parsing to extract structured data (name, education, skills).
   3. Allow HR to adjust NLP scoring weights through the settings page.
-  4. Add a candidate comparison view to display two applicants side by side.
-  5. Re-enable BERT semantic scoring on a higher-RAM production server.
-  6. Add a feedback loop where HR shortlist/reject decisions train a future ML model.
+  4. Add a feedback loop where HR shortlist/reject decisions train a future ML model.
+  5. Send individual notification emails during bulk shortlist/reject actions.
+  6. Add multi-job analytics filtering so HR can compare metrics across specific jobs.
 
 
 --------------------------------------------------------------------------------

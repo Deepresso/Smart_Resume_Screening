@@ -1,0 +1,122 @@
+{% extends "base_hr.html" %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><div class="page-title">Analytics</div><div class="page-sub">Hiring insights across all your job postings</div></div>
+</div>
+
+<!-- Stat cards -->
+<div class="stats-row" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-value">{{ jobs | length }}</div>
+        <div class="stat-label">Job Postings</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ all_apps | length }}</div>
+        <div class="stat-label">Total Applications</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ status_counts.Shortlisted }}</div>
+        <div class="stat-label">Shortlisted</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ avg_score }}%</div>
+        <div class="stat-label">Avg Match Score</div>
+    </div>
+</div>
+
+<div class="grid-2" style="align-items:start;gap:20px;">
+
+    <!-- Score Distribution -->
+    <div class="card">
+        <div class="card-header"><div class="card-title">&#x1F4CA; Score Distribution</div></div>
+        <div class="card-body">
+            {% if all_apps %}
+            {% set max_bucket = buckets.values() | max %}
+            {% for label, count in buckets.items() %}
+            {% set pct = (count / max_bucket * 100) | round if max_bucket > 0 else 0 %}
+            {% set color = '#10b981' if label == '80–100' else '#3b82f6' if label == '60–80' else '#f59e0b' if label == '40–60' else '#f97316' if label == '20–40' else '#ef4444' %}
+            <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:5px;">
+                    <span style="color:var(--navy);">{{ label }}%</span>
+                    <span style="color:var(--text-muted);">{{ count }} applicant{{ 's' if count != 1 }}</span>
+                </div>
+                <div style="background:#f1f5f9;border-radius:6px;height:28px;overflow:hidden;">
+                    <div style="height:100%;width:{{ pct }}%;background:{{ color }};border-radius:6px;display:flex;align-items:center;padding-left:10px;transition:width 0.6s ease;min-width:{% if count > 0 %}2%{% else %}0{% endif %};">
+                        {% if count > 0 %}<span style="color:white;font-size:11px;font-weight:700;">{{ count }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align:center;padding:40px;color:var(--text-muted);">No applications yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="card">
+        <div class="card-header"><div class="card-title">&#x1F4CB; Application Status</div></div>
+        <div class="card-body">
+            {% set total = all_apps | length %}
+            {% if total > 0 %}
+            <!-- Stacked bar -->
+            {% set sl_pct = (status_counts.Shortlisted / total * 100) | round %}
+            {% set rj_pct = (status_counts.Rejected    / total * 100) | round %}
+            {% set pd_pct = (status_counts.Pending     / total * 100) | round %}
+            <div style="display:flex;height:40px;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+                {% if sl_pct > 0 %}<div style="width:{{ sl_pct }}%;background:#10b981;" title="Shortlisted"></div>{% endif %}
+                {% if pd_pct > 0 %}<div style="width:{{ pd_pct }}%;background:#f59e0b;" title="Pending"></div>{% endif %}
+                {% if rj_pct > 0 %}<div style="width:{{ rj_pct }}%;background:#ef4444;" title="Rejected"></div>{% endif %}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                {% for label, count, color in [('Shortlisted', status_counts.Shortlisted, '#10b981'), ('Pending Review', status_counts.Pending, '#f59e0b'), ('Rejected', status_counts.Rejected, '#ef4444')] %}
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:12px;height:12px;border-radius:3px;background:{{ color }};"></div>
+                        <span style="font-size:13px;font-weight:600;color:var(--navy);">{{ label }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:13px;font-weight:700;color:var(--navy);">{{ count }}</span>
+                        <span style="font-size:11px;color:var(--text-muted);">{{ (count / total * 100) | round }}%</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <div style="font-size:12px;color:var(--text-muted);">Shortlist rate: <strong style="color:var(--green);">{{ sl_pct }}%</strong></div>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:40px;color:var(--text-muted);">No applications yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Applications per Job -->
+    <div class="card" style="grid-column:1/-1;">
+        <div class="card-header"><div class="card-title">&#x1F4BC; Applications per Job Posting</div></div>
+        <div class="card-body">
+            {% if apps_per_job %}
+            {% set max_count = apps_per_job | map(attribute='count') | max %}
+            {% for item in apps_per_job %}
+            {% set bar_pct = (item.count / max_count * 100) | round if max_count > 0 else 0 %}
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+                <div style="width:220px;min-width:180px;font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ item.title }}">
+                    {{ item.title | replace(' [TEST]','') }}
+                </div>
+                <div style="flex:1;background:#f1f5f9;border-radius:6px;height:26px;overflow:hidden;">
+                    <div style="height:100%;width:{{ bar_pct }}%;background:linear-gradient(90deg,#ea580c,#f97316);border-radius:6px;display:flex;align-items:center;padding-left:10px;min-width:{% if item.count > 0 %}2%{% else %}0{% endif %};">
+                        {% if item.count > 0 %}<span style="color:white;font-size:11px;font-weight:700;">{{ item.count }}</span>{% endif %}
+                    </div>
+                </div>
+                <div style="width:28px;text-align:right;font-size:13px;font-weight:700;color:var(--navy);">{{ item.count }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="text-align:center;padding:40px;color:var(--text-muted);">No data yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

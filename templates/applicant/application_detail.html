@@ -127,16 +127,38 @@
     </div>
 </div>
 
-{% if appl.job.keywords %}
+{% if kw_detail %}
+{% set found = kw_detail | selectattr('found') | list %}
+{% set missing = kw_detail | rejectattr('found') | list %}
 <div class="card">
-    <div class="card-header"><div class="card-title">Job Keywords</div></div>
+    <div class="card-header">
+        <div class="card-title">Keyword Analysis</div>
+        <span style="font-size:12px;color:var(--text-muted);">{{ found|length }}/{{ kw_detail|length }} keywords matched</span>
+    </div>
     <div class="card-body">
-        <div class="kw-container">
-            {% for kw in appl.job.keywords.split(',') %}
-            <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;">{{ kw.strip() }}</span>
-            {% endfor %}
+        {% if found %}
+        <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--green);margin-bottom:8px;">&#x2713; Found in your resume ({{ found|length }})</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                {% for item in found %}
+                <span style="background:#dcfce7;color:#15803d;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">&#x2713; {{ item.keyword }}</span>
+                {% endfor %}
+            </div>
         </div>
-        <p class="text-muted text-sm" style="margin-top:10px;">Ensure these keywords appear clearly in your resume to improve your match score.</p>
+        {% endif %}
+        {% if missing %}
+        <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--red);margin-bottom:8px;">&#x2715; Missing from your resume ({{ missing|length }})</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                {% for item in missing %}
+                <span style="background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">&#x2715; {{ item.keyword }}</span>
+                {% endfor %}
+            </div>
+            <p class="text-muted text-sm" style="margin-top:12px;">&#x1F4A1; Add these keywords to your resume to improve your match score for similar roles.</p>
+        </div>
+        {% else %}
+        <p style="color:var(--green);font-size:13px;font-weight:600;">&#x1F3C6; Your resume contains all required keywords!</p>
+        {% endif %}
     </div>
 </div>
 {% endif %}
