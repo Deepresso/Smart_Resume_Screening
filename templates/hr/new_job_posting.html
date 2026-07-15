@@ -35,7 +35,12 @@
                         </div>
                         <div class="form-group">
                             <label>Location</label>
-                            <input type="text" name="location" id="previewLocation" placeholder="e.g. Penang, Malaysia" oninput="updatePreview()">
+                            <div style="position:relative;" id="locWrapper">
+                                <input type="text" name="location" id="previewLocation" placeholder="e.g. Petaling Jaya, Selangor"
+                                       autocomplete="off" oninput="updatePreview();locAC(this.value)" onkeydown="locKeydown(event)"
+                                       style="width:100%;box-sizing:border-box;">
+                                <div id="locDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1.5px solid #e5e7eb;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.10);z-index:500;max-height:200px;overflow-y:auto;"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -147,5 +152,45 @@ function submitJob() {
     document.getElementById('keywordsHidden').value = getKeywords().join(',');
     document.getElementById('jobForm').submit();
 }
+
+// ── Location autocomplete ──
+const LOC_LIST = ["Kuala Lumpur","Bukit Bintang, Kuala Lumpur","KLCC, Kuala Lumpur","Mont Kiara, Kuala Lumpur","Bangsar, Kuala Lumpur","Bangsar South, Kuala Lumpur","Chow Kit, Kuala Lumpur","Damansara Heights, Kuala Lumpur","Desa Parkcity, Kuala Lumpur","Kepong, Kuala Lumpur","Setapak, Kuala Lumpur","Wangsa Maju, Kuala Lumpur","Sri Petaling, Kuala Lumpur","Bukit Jalil, Kuala Lumpur","Old Klang Road, Kuala Lumpur","Segambut, Kuala Lumpur","Sentul, Kuala Lumpur","Titiwangsa, Kuala Lumpur","Cheras, Kuala Lumpur","Ampang, Kuala Lumpur","Keramat, Kuala Lumpur","Brickfields, Kuala Lumpur","KL Sentral, Kuala Lumpur","Seputeh, Kuala Lumpur","Midvalley, Kuala Lumpur","Chan Sow Lin, Kuala Lumpur","Pandan Indah, Kuala Lumpur","Maluri, Kuala Lumpur","Alam Damai, Kuala Lumpur","Taman Connaught, Kuala Lumpur","Pantai, Kuala Lumpur","Sri Hartamas, Kuala Lumpur","Taman Tun Dr Ismail, Kuala Lumpur","Desa Sri Hartamas, Kuala Lumpur","Selangor","Petaling Jaya, Selangor","Subang Jaya, Selangor","Shah Alam, Selangor","Cyberjaya, Selangor","Puchong, Selangor","Klang, Selangor","Ampang, Selangor","Sepang, Selangor","Cheras, Selangor","Sunway, Selangor","Ara Damansara, Selangor","Damansara Utama, Selangor","Kota Damansara, Selangor","Damansara Perdana, Selangor","USJ, Selangor","Putra Heights, Selangor","Rawang, Selangor","Kajang, Selangor","Balakong, Selangor","Seri Kembangan, Selangor","Dengkil, Selangor","Glenmarie, Selangor","Selayang, Selangor","Batu Caves, Selangor","Gombak, Selangor","Sungai Buloh, Selangor","Kota Kemuning, Selangor","Bandar Sunway, Selangor","Serdang, Selangor","Bangi, Selangor","Nilai, Selangor","Semenyih, Selangor","Port Klang, Selangor","Kuala Selangor, Selangor","Banting, Selangor","Ulu Klang, Selangor","Putrajaya","Penang","Georgetown, Penang","Bayan Lepas, Penang","Bukit Mertajam, Penang","Butterworth, Penang","Seberang Perai, Penang","Batu Ferringhi, Penang","Tanjung Bungah, Penang","Air Itam, Penang","Jelutong, Penang","Gelugor, Penang","Balik Pulau, Penang","Nibong Tebal, Penang","Kepala Batas, Penang","Simpang Ampat, Penang","Prai, Penang","Johor","Johor Bahru, Johor","Iskandar Puteri, Johor","Skudai, Johor","Pasir Gudang, Johor","Ulu Tiram, Johor","Kluang, Johor","Batu Pahat, Johor","Muar, Johor","Kota Tinggi, Johor","Kulai, Johor","Gelang Patah, Johor","Tampoi, Johor","Permas Jaya, Johor","Larkin, Johor","Tebrau, Johor","Austin Heights, Johor","Bukit Indah, Johor","Nusajaya, Johor","Senai, Johor","Mersing, Johor","Perak","Ipoh, Perak","Taiping, Perak","Teluk Intan, Perak","Sitiawan, Perak","Lumut, Perak","Manjung, Perak","Kuala Kangsar, Perak","Batu Gajah, Perak","Kampar, Perak","Kedah","Alor Setar, Kedah","Sungai Petani, Kedah","Kulim, Kedah","Langkawi, Kedah","Jitra, Kedah","Kelantan","Kota Bharu, Kelantan","Gua Musang, Kelantan","Pasir Mas, Kelantan","Tanah Merah, Kelantan","Terengganu","Kuala Terengganu, Terengganu","Kemaman, Terengganu","Dungun, Terengganu","Pahang","Kuantan, Pahang","Temerloh, Pahang","Bentong, Pahang","Cameron Highlands, Pahang","Genting Highlands, Pahang","Negeri Sembilan","Seremban, Negeri Sembilan","Port Dickson, Negeri Sembilan","Nilai, Negeri Sembilan","Melaka","Melaka City, Melaka","Ayer Keroh, Melaka","Alor Gajah, Melaka","Perlis","Kangar, Perlis","Sabah","Kota Kinabalu, Sabah","Sandakan, Sabah","Tawau, Sabah","Lahad Datu, Sabah","Penampang, Sabah","Inanam, Sabah","Likas, Sabah","Sarawak","Kuching, Sarawak","Miri, Sarawak","Sibu, Sarawak","Bintulu, Sarawak","Serian, Sarawak","Labuan","Remote","Hybrid","Work From Home","Fully Remote"];
+let locIdx = -1;
+function locAC(val) {
+    const dd = document.getElementById('locDropdown');
+    locIdx = -1;
+    if (!val.trim()) { dd.style.display='none'; return; }
+    const q = val.toLowerCase();
+    const hits = LOC_LIST.filter(l => l.toLowerCase().includes(q)).slice(0,8);
+    if (!hits.length) { dd.style.display='none'; return; }
+    dd.innerHTML = hits.map(l => {
+        const c = l.indexOf(',');
+        const a = c>-1 ? l.slice(0,c) : l;
+        const r = c>-1 ? l.slice(c) : '';
+        return `<div class="loc-opt" data-val="${l.replace(/"/g,'&quot;')}" onmousedown="pickLoc(this.dataset.val)"><b style="color:#1e293b;">${a}</b><span style="color:#6b7280;font-size:12px;">${r}</span></div>`;
+    }).join('');
+    dd.style.display='block';
+}
+function locKeydown(e) {
+    const dd = document.getElementById('locDropdown');
+    const items = dd.querySelectorAll('.loc-opt');
+    if (!items.length) return;
+    if (e.key==='ArrowDown'){e.preventDefault();locIdx=Math.min(locIdx+1,items.length-1);}
+    else if(e.key==='ArrowUp'){e.preventDefault();locIdx=Math.max(locIdx-1,0);}
+    else if(e.key==='Enter'&&locIdx>=0){e.preventDefault();pickLoc(items[locIdx].dataset.val);return;}
+    else if(e.key==='Escape'){dd.style.display='none';return;}
+    else return;
+    items.forEach((el,i)=>el.style.background=i===locIdx?'#fff7ed':'');
+}
+function pickLoc(val) {
+    const inp = document.getElementById('previewLocation');
+    inp.value = val; updatePreview();
+    document.getElementById('locDropdown').style.display='none'; locIdx=-1;
+}
+document.addEventListener('click', function(e){
+    if(!document.getElementById('locWrapper').contains(e.target))
+        document.getElementById('locDropdown').style.display='none';
+});
 </script>
+<style>.loc-opt{padding:9px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px;}.loc-opt:last-child{border-bottom:none;}.loc-opt:hover{background:#fff7ed;}</style>
 {% endblock %}
