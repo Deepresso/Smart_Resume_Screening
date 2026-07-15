@@ -673,8 +673,13 @@ def applicant_jobs():
         loc_lower = loc_q.lower()
         jobs = [j for j in jobs if j.location and loc_lower in j.location.lower()]
 
+    # Unique locations from active jobs for autocomplete
+    all_active = JobPosting.query.filter_by(is_active=True).all()
+    db_locations = sorted(set(j.location for j in all_active if j.location))
+
     return render_template('applicant/browse_jobs.html', jobs=jobs,
-                           search_scores=search_scores, search_q=q, search_loc=loc_q)
+                           search_scores=search_scores, search_q=q, search_loc=loc_q,
+                           db_locations=db_locations)
 
 @app.route('/applicant/jobs/<int:job_id>/apply', methods=['GET', 'POST'])
 @login_required
