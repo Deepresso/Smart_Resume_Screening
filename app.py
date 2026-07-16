@@ -698,7 +698,9 @@ def hr_settings():
 @applicant_required
 def applicant_dashboard():
     all_jobs     = JobPosting.query.filter_by(is_active=True).all()
-    applications = Application.query.filter_by(user_id=current_user.id).order_by(Application.applied_at.desc()).limit(3).all()
+    all_user_apps = Application.query.filter_by(user_id=current_user.id).order_by(Application.applied_at.desc()).all()
+    applications  = all_user_apps[:3]
+    applied_map   = {a.job_id: a.id for a in all_user_apps}  # job_id → app_id
 
     recommended = []
     rec_scores  = {}
@@ -719,16 +721,18 @@ def applicant_dashboard():
             score = semantic_score(resume_text, job_text)
             scored.append((job, score))
         scored.sort(key=lambda x: x[1], reverse=True)
-        top = [(job, s) for job, s in scored[:4] if s >= 25.0]
+        top = [(job, s) for job, s in scored if s >= 25.0 and job.id not in applied_map][:4]
         if top:
             rec_scores  = {job.id: round(s) for job, s in top}
             recommended = [job for job, s in top]
 
-    jobs = [] if recommended else sorted(all_jobs, key=lambda j: j.created_at, reverse=True)[:4]
+    unapplied = [j for j in sorted(all_jobs, key=lambda j: j.created_at, reverse=True) if j.id not in applied_map]
+    jobs = [] if recommended else unapplied[:4]
 
     return render_template('applicant/dashboard.html', jobs=jobs,
                            recommended=recommended, rec_scores=rec_scores,
-                           applications=applications, rec_source=rec_source)
+                           applications=applications, rec_source=rec_source,
+                           applied_map=applied_map)
 
 @app.route('/applicant/jobs')
 @login_required
@@ -757,13 +761,14 @@ def applicant_jobs():
         loc_lower = loc_q.lower()
         jobs = [j for j in jobs if j.location and loc_lower in j.location.lower()]
 
-    # Unique locations from active jobs for autocomplete
     all_active = JobPosting.query.filter_by(is_active=True).all()
     db_locations = sorted(set(j.location for j in all_active if j.location))
+    user_apps = Application.query.filter_by(user_id=current_user.id).all()
+    applied_map = {a.job_id: a.id for a in user_apps}
 
     return render_template('applicant/browse_jobs.html', jobs=jobs,
                            search_scores=search_scores, search_q=q, search_loc=loc_q,
-                           db_locations=db_locations)
+                           db_locations=db_locations, applied_map=applied_map)
 
 @app.route('/applicant/jobs/<int:job_id>/apply', methods=['GET', 'POST'])
 @login_required

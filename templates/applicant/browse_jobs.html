@@ -63,13 +63,15 @@
 <div style="display:flex;flex-direction:column;gap:12px;">
     {% for job in jobs %}
     {% set rel = search_scores.get(job.id, 0) if search_scores else 0 %}
-    <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:20px 24px;transition:all 0.2s;"
-         onmouseover="this.style.borderColor='#ea580c';this.style.boxShadow='0 4px 12px rgba(234,88,12,0.1)'"
-         onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+    {% set app_id = applied_map.get(job.id) %}
+    {% set is_applied = app_id is not none %}
+    <div style="background:{% if is_applied %}#f8fafc{% else %}white{% endif %};border:1.5px solid {% if is_applied %}#10b981{% else %}var(--border){% endif %};border-radius:14px;padding:20px 24px;transition:all 0.2s;{% if is_applied %}opacity:0.85;{% endif %}"
+         {% if not is_applied %}onmouseover="this.style.borderColor='#ea580c';this.style.boxShadow='0 4px 12px rgba(234,88,12,0.1)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'"{% endif %}>
         <div style="display:flex;align-items:flex-start;gap:16px;">
 
             <!-- Company Initial Badge -->
-            <div style="width:52px;height:52px;min-width:52px;background:linear-gradient(135deg,#ffedd5,#fed7aa);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#c2410c;">
+            <div style="width:52px;height:52px;min-width:52px;background:{% if is_applied %}linear-gradient(135deg,#d1fae5,#a7f3d0){% else %}linear-gradient(135deg,#ffedd5,#fed7aa){% endif %};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:{% if is_applied %}#065f46{% else %}#c2410c{% endif %};">
                 {{ job.title[:2].upper() }}
             </div>
 
@@ -77,11 +79,22 @@
             <div style="flex:1;min-width:0;">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <div>
-                        <a href="{{ url_for('applicant_apply', job_id=job.id) }}"
-                           style="font-size:16px;font-weight:800;color:var(--navy);text-decoration:none;display:block;margin-bottom:3px;"
-                           onmouseover="this.style.color='#ea580c'" onmouseout="this.style.color='var(--navy)'">
-                            {{ job.title }}
-                        </a>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                            {% if is_applied %}
+                            <a href="{{ url_for('applicant_application_detail', app_id=app_id) }}"
+                               style="font-size:16px;font-weight:800;color:var(--navy);text-decoration:none;"
+                               onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='var(--navy)'">
+                                {{ job.title }}
+                            </a>
+                            <span style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;">&#x2713; Applied</span>
+                            {% else %}
+                            <a href="{{ url_for('applicant_apply', job_id=job.id) }}"
+                               style="font-size:16px;font-weight:800;color:var(--navy);text-decoration:none;"
+                               onmouseover="this.style.color='#ea580c'" onmouseout="this.style.color='var(--navy)'">
+                                {{ job.title }}
+                            </a>
+                            {% endif %}
+                        </div>
                         <div style="font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                             <span style="font-weight:600;color:#374151;">{{ job.company }}</span>
                             {% if job.location %}
@@ -93,7 +106,9 @@
 
                     <!-- Right: match badge + salary -->
                     <div style="text-align:right;flex-shrink:0;">
-                        {% if search_q %}
+                        {% if is_applied %}
+                        <span style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-block;margin-bottom:6px;">&#x2713; Already Applied</span>
+                        {% elif search_q %}
                             {% if loop.first %}
                             <span style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;display:inline-block;margin-bottom:6px;">&#x2B50; Best Match</span>
                             {% elif rel >= 60 %}
@@ -123,7 +138,7 @@
                     </div>
                 </div>
 
-                <!-- Keywords + Apply button row -->
+                <!-- Keywords + Apply/View button row -->
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:10px;">
                     <div style="display:flex;flex-wrap:wrap;gap:6px;">
                         {% if job.keywords %}
@@ -135,10 +150,17 @@
                         {% endif %}
                         {% endif %}
                     </div>
+                    {% if is_applied %}
+                    <a href="{{ url_for('applicant_application_detail', app_id=app_id) }}"
+                       style="padding:8px 20px;background:white;color:#10b981;border:1.5px solid #10b981;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
+                        View Application &rarr;
+                    </a>
+                    {% else %}
                     <a href="{{ url_for('applicant_apply', job_id=job.id) }}"
                        style="padding:8px 20px;background:#ea580c;color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
                         Apply Now &rarr;
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
