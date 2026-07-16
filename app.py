@@ -7,7 +7,7 @@ import re
 import threading
 from dotenv import load_dotenv
 load_dotenv()
-from flask import Flask, render_template, redirect, url_for, request, flash, Response, session
+from flask import Flask, render_template, redirect, url_for, request, flash, Response, session, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from sendgrid import SendGridAPIClient
@@ -908,7 +908,7 @@ Applicant name: {current_user.name}"""
     try:
         client = Groq(api_key=api_key)
         resp = client.chat.completions.create(
-            model='llama3-8b-8192',
+            model='llama-3.1-8b-instant',
             messages=messages,
             max_tokens=512,
             temperature=0.7,
