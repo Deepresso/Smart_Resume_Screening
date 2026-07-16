@@ -857,6 +857,66 @@ def applicant_application_detail(app_id):
     kw_detail = keyword_breakdown(appl.resume_text or '', kw_list)
     return render_template('applicant/application_detail.html', appl=appl, rank=rank, total=total, kw_detail=kw_detail)
 
+@app.route('/applicant/chat', methods=['POST'])
+@login_required
+@applicant_required
+def applicant_chat():
+    from groq import Groq
+    data    = request.get_json(silent=True) or {}
+    message = data.get('message', '').strip()
+    context = data.get('context', '')
+    history = data.get('history', [])
+
+    if not message:
+        return jsonify({'error': 'Empty message'}), 400
+
+    api_key = os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'AI service not configured.'}), 500
+
+    system_prompt = f"""You are an AI career assistant embedded in Resumatch, a Smart Resume Screening System for job applicants in Malaysia.
+
+You help applicants with:
+- Understanding their NLP match scores
+- Resume improvement tips to increase match scores
+- Finding suitable jobs based on their skills
+- Understanding application statuses (Submitted, Shortlisted, Rejected)
+- Career advice for the Malaysian job market
+
+How the scoring system works:
+- Keyword Matching (40%): Checks if job keywords appear exactly in the resume
+- BERT Semantic (30%): AI understands meaning — "developer" still matches "engineer"
+- Fuzzy Matching (20%): Catches typos and slight variations like "Python" vs "Pyhton"
+- TF-IDF Similarity (10%): Overall vocabulary alignment between resume and job description
+- Composite score = weighted average of all four
+
+Tips you can give:
+- Add missing keywords verbatim into the resume Skills or Summary section
+- A score above 70% is strong; 50-70% is moderate; below 50% needs improvement
+- Quick Apply saves one resume to the profile for instant one-click applications
+
+Keep responses concise (3-5 sentences or short bullet points), friendly, and specific.
+Current context: {context if context else 'Applicant portal'}
+Applicant name: {current_user.name}"""
+
+    messages = [{'role': 'system', 'content': system_prompt}]
+    for msg in history[-6:]:
+        if msg.get('role') in ('user', 'assistant') and msg.get('content'):
+            messages.append({'role': msg['role'], 'content': msg['content']})
+    messages.append({'role': 'user', 'content': message})
+
+    try:
+        client = Groq(api_key=api_key)
+        resp = client.chat.completions.create(
+            model='llama3-8b-8192',
+            messages=messages,
+            max_tokens=512,
+            temperature=0.7,
+        )
+        return jsonify({'reply': resp.choices[0].message.content})
+    except Exception as e:
+        return jsonify({'error': f'AI error: {str(e)}'}), 500
+
 @app.route('/applicant/notifications/<int:notif_id>/read')
 @login_required
 @applicant_required

@@ -112,5 +112,155 @@ document.addEventListener('click', function() {
     document.getElementById('notifDropdown').classList.remove('open');
 });
 </script>
+
+<!-- ── AI Career Assistant Chat Widget ── -->
+<div id="chat-widget" style="position:fixed;bottom:24px;right:24px;z-index:1000;font-family:inherit;">
+
+    <!-- Toggle button -->
+    <button id="chat-toggle" onclick="toggleChat()"
+        style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1e293b,#334155);color:white;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform 0.2s;"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        &#x1F4AC;
+    </button>
+    <div id="chat-unread" style="display:none;position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</div>
+
+    <!-- Chat panel -->
+    <div id="chat-panel" style="display:none;position:absolute;bottom:68px;right:0;width:340px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.18);overflow:hidden;flex-direction:column;">
+
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:14px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">&#x1F916;</div>
+            <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;color:white;">Career Assistant</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.6);">Powered by Groq · Llama 3</div>
+            </div>
+            <button onclick="toggleChat()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:0;line-height:1;">&times;</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages" style="height:320px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f8fafc;">
+            <!-- Welcome message -->
+            <div class="chat-msg-ai">
+                <div style="font-size:12px;color:#64748b;margin-bottom:4px;">Career Assistant</div>
+                <div style="background:white;border:1px solid #e5e7eb;border-radius:12px 12px 12px 2px;padding:10px 13px;font-size:13px;color:#1e293b;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    Hi {{ current_user.name.split()[0] }}! 👋 I'm your career assistant. I can help you understand your match scores, improve your resume, or find the right jobs. What would you like to know?
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggested prompts -->
+        <div id="chat-suggestions" style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #f1f5f9;background:white;">
+            <button onclick="sendSuggestion(this)" style="font-size:11px;background:#f1f5f9;color:#374151;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;white-space:nowrap;">📊 Explain my scores</button>
+            <button onclick="sendSuggestion(this)" style="font-size:11px;background:#f1f5f9;color:#374151;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;white-space:nowrap;">📝 Resume tips</button>
+            <button onclick="sendSuggestion(this)" style="font-size:11px;background:#f1f5f9;color:#374151;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;white-space:nowrap;">💼 Find jobs for me</button>
+        </div>
+
+        <!-- Input -->
+        <div style="padding:10px 12px;border-top:1px solid #e5e7eb;background:white;display:flex;gap:8px;align-items:center;">
+            <input id="chat-input" type="text" placeholder="Ask me anything..."
+                style="flex:1;border:1.5px solid #e5e7eb;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;font-family:inherit;"
+                onkeydown="if(event.key==='Enter')sendMessage()"
+                onfocus="this.style.borderColor='#1e293b'" onblur="this.style.borderColor='#e5e7eb'">
+            <button onclick="sendMessage()" id="chat-send"
+                style="width:36px;height:36px;border-radius:50%;background:#1e293b;color:white;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                &#x27A4;
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const chatHistory = [];
+const chatContext = document.title + ' — ' + window.location.pathname;
+
+function toggleChat() {
+    const panel = document.getElementById('chat-panel');
+    const unread = document.getElementById('chat-unread');
+    const isOpen = panel.style.display === 'flex';
+    panel.style.display = isOpen ? 'none' : 'flex';
+    panel.style.flexDirection = 'column';
+    if (!isOpen) {
+        unread.style.display = 'none';
+        document.getElementById('chat-input').focus();
+    }
+}
+
+function appendMsg(role, text) {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    if (role === 'user') {
+        div.innerHTML = `<div style="display:flex;justify-content:flex-end;">
+            <div style="background:#1e293b;color:white;border-radius:12px 12px 2px 12px;padding:10px 13px;font-size:13px;max-width:80%;line-height:1.5;">${escHtml(text)}</div>
+        </div>`;
+    } else {
+        div.innerHTML = `<div class="chat-msg-ai">
+            <div style="font-size:12px;color:#64748b;margin-bottom:4px;">Career Assistant</div>
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:12px 12px 12px 2px;padding:10px 13px;font-size:13px;color:#1e293b;line-height:1.6;box-shadow:0 1px 3px rgba(0,0,0,0.05);white-space:pre-wrap;">${escHtml(text)}</div>
+        </div>`;
+    }
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function appendTyping() {
+    const box = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.id = 'chat-typing';
+    div.innerHTML = `<div style="background:white;border:1px solid #e5e7eb;border-radius:12px 12px 12px 2px;padding:10px 13px;display:inline-flex;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <span style="width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:bounce 1s infinite 0s;display:inline-block;"></span>
+        <span style="width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:bounce 1s infinite 0.2s;display:inline-block;"></span>
+        <span style="width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:bounce 1s infinite 0.4s;display:inline-block;"></span>
+    </div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+function escHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    document.getElementById('chat-suggestions').style.display = 'none';
+
+    appendMsg('user', msg);
+    chatHistory.push({role:'user', content:msg});
+    appendTyping();
+
+    document.getElementById('chat-send').disabled = true;
+
+    try {
+        const res = await fetch('/applicant/chat', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({message: msg, context: chatContext, history: chatHistory.slice(0,-1)})
+        });
+        const data = await res.json();
+        document.getElementById('chat-typing')?.remove();
+        const reply = data.reply || data.error || 'Sorry, something went wrong.';
+        appendMsg('assistant', reply);
+        chatHistory.push({role:'assistant', content:reply});
+    } catch(e) {
+        document.getElementById('chat-typing')?.remove();
+        appendMsg('assistant', 'Connection error. Please try again.');
+    }
+
+    document.getElementById('chat-send').disabled = false;
+    document.getElementById('chat-input').focus();
+}
+
+function sendSuggestion(btn) {
+    document.getElementById('chat-input').value = btn.textContent.replace(/^[^\w]+/,'');
+    sendMessage();
+}
+</script>
+<style>
+@keyframes bounce {
+    0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)}
+}
+</style>
 </body>
 </html>

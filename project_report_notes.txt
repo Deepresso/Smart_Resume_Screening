@@ -894,6 +894,25 @@ Current Limitations:
      lower sections during encoding.
   4. Quick Apply stores only the most recently saved resume — no version history.
 
+AI Career Assistant Chatbot:
+  - A floating chat widget (bottom-right corner) appears on every applicant page.
+  - Powered by Groq API (free tier) using the Llama 3 8B model (llama3-8b-8192).
+  - Clicking the chat bubble opens a panel with a conversation interface.
+  - Context-aware: the current page title and URL path are passed to the AI so it
+    can give relevant advice (e.g. explaining scores on the application detail page).
+  - Conversation history (last 6 messages) is maintained client-side and sent with
+    each request so the assistant can follow multi-turn conversations.
+  - System prompt instructs the AI about: the 4-algorithm scoring system and weights,
+    what each score means, resume improvement tips, application statuses, and the
+    Malaysian job market context.
+  - Suggested prompt chips shown on first open: "Explain my scores", "Resume tips",
+    "Find jobs for me" — hidden after first message.
+  - Typing indicator (3 animated dots) shown while waiting for AI response.
+  - Route: POST /applicant/chat (applicant_chat) — login_required + applicant_required.
+  - API key stored in .env as GROQ_API_KEY, loaded via python-dotenv.
+  - Widget is applicant-only; HR portal has no chatbot.
+  - Groq free tier: 14,400 requests/day — sufficient for FYP demo.
+
 Possible Future Improvements:
   1. Store uploaded resumes in cloud storage (AWS S3 / Cloudinary) for persistence.
   2. Add resume parsing to extract structured data (name, education, skills).
