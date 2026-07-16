@@ -1,4 +1,5 @@
 import re
+import hashlib
 import numpy as np
 import fitz  # PyMuPDF
 from docx import Document
@@ -8,6 +9,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # Lazy-loaded BERT model — downloaded on first use (~80 MB)
 _bert_model = None
+
+# In-memory cache for semantic_score results keyed by MD5 of input pair.
+# Persists for the lifetime of the server process — same text pair is never
+# sent to BERT twice, making repeated dashboard loads near-instant.
+_semantic_cache = {}
 
 def _get_bert_model():
     global _bert_model
@@ -84,18 +90,32 @@ def similarity_score(resume_text, job_description):
 
 
 def semantic_score(resume_text, job_description):
-    """BERT cosine similarity between resume and job description embeddings."""
+    """BERT cosine similarity between resume and job description embeddings.
+
+    Results are cached by MD5 of the input pair so repeated calls with the
+    same texts (e.g. dashboard reloads) return instantly without re-running BERT.
+    """
     if not resume_text or not job_description:
         return 0.0
+
+    a_text = resume_text[:1000]
+    b_text = job_description[:1000]
+    cache_key = hashlib.md5((a_text + '\x00' + b_text).encode('utf-8', errors='ignore')).hexdigest()
+
+    if cache_key in _semantic_cache:
+        return _semantic_cache[cache_key]
+
     try:
         model = _get_bert_model()
-        # Truncate to ~1000 chars — BERT has a 512-token limit
-        emb = model.encode([resume_text[:1000], job_description[:1000]])
+        emb = model.encode([a_text, b_text])
         a, b = emb[0], emb[1]
         score = float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-        return round(max(score, 0.0) * 100, 2)
+        result = round(max(score, 0.0) * 100, 2)
     except Exception:
-        return 0.0
+        result = 0.0
+
+    _semantic_cache[cache_key] = result
+    return result
 
 
 def keyword_breakdown(resume_text, keywords):
