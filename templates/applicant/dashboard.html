@@ -1,162 +1,227 @@
 {% extends "base_applicant.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="page-header">
-    <div>
-        <div class="page-title">Find Your Next Opportunity</div>
-        <div class="page-sub">Hello, {{ current_user.name }}! You have {{ applications | length }} active application{{ 's' if applications | length != 1 }}.</div>
+
+<!-- Hero welcome banner -->
+<div style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 60%,#1e3a5f 100%);border-radius:16px;padding:32px 36px;margin-bottom:24px;position:relative;overflow:hidden;">
+    <!-- subtle background rings -->
+    <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;border:40px solid rgba(255,255,255,0.03);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-60px;right:80px;width:280px;height:280px;border-radius:50%;border:40px solid rgba(255,255,255,0.03);pointer-events:none;"></div>
+
+    <div style="position:relative;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+        <div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Welcome back</div>
+            <div style="font-size:26px;font-weight:900;color:#ffffff;margin-bottom:10px;">{{ current_user.name }}</div>
+            <!-- inline stats -->
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></div>
+                    <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;">
+                        {{ applications | length }} Application{{ 's' if applications | length != 1 }}
+                    </span>
+                </div>
+                {% set shortlisted = applications | selectattr('status', 'equalto', 'shortlisted') | list %}
+                {% set pending = applications | selectattr('status', 'equalto', 'submitted') | list %}
+                {% if shortlisted %}
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#10b981;"></div>
+                    <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;">{{ shortlisted | length }} Shortlisted</span>
+                </div>
+                {% endif %}
+                {% if pending %}
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#ea580c;"></div>
+                    <span style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;">{{ pending | length }} In Review</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <a href="{{ url_for('applicant_jobs') }}" class="btn btn-primary" style="white-space:nowrap;padding:10px 22px;font-size:13px;font-weight:700;">
+            Browse Jobs &rarr;
+        </a>
     </div>
-    <a href="{{ url_for('applicant_jobs') }}" class="btn btn-primary">Browse All Jobs</a>
 </div>
 
-<div class="grid-2" style="align-items:start;">
+<!-- Main two-column layout -->
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+    <!-- LEFT: Job recommendations / available positions -->
     <div>
         {% if recommended %}
-        <!-- Recommended jobs based on uploaded resume -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="font-size:13px;font-weight:700;">Recommended for You</div>
-            <span style="background:#eff6ff;color:#2563eb;font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;">Based on your resume</span>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">Recommended for You</div>
+            <span style="background:#eff6ff;color:#2563eb;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid #bfdbfe;">&#x1F9E0; Based on your resume</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
             {% for job in recommended %}
             {% set score = rec_scores.get(job.id, 0) %}
-            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
-                <div class="job-card-header">
-                    <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">{{ job.title[:2].upper() }}</span>
-                    {% if loop.first %}
-                    <span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">Best Match</span>
-                    {% else %}
-                    <span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">{{ score }}% match</span>
-                    {% endif %}
+            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" style="display:block;background:white;border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;transition:all 0.18s;text-decoration:none;" onmouseover="this.style.borderColor='#ea580c';this.style.boxShadow='0 4px 16px rgba(234,88,12,0.10)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                    <!-- Company badge -->
+                    <div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#ffedd5,#fed7aa);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#c2410c;flex-shrink:0;">
+                        {{ job.title[:2].upper() }}
+                    </div>
+                    <!-- Job info -->
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                            <div style="font-size:14px;font-weight:800;color:var(--navy);">{{ job.title }}</div>
+                            {% if loop.first %}
+                            <span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">&#x1F3C6; Best Match</span>
+                            {% else %}
+                            <span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">{{ score }}% match</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+                            {{ job.company }}
+                            {% if job.location %} &nbsp;&#x2022;&nbsp; &#x1F4CD; {{ job.location }}{% endif %}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            {% if job.salary_min or job.salary_max %}
+                            <span style="font-size:12px;font-weight:700;color:var(--green);">
+                                RM{% if job.salary_min and job.salary_max %}{{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}{% elif job.salary_min %}{{ '{:,}'.format(job.salary_min) }}+{% else %}Up to {{ '{:,}'.format(job.salary_max) }}{% endif %}/mo
+                            </span>
+                            {% endif %}
+                            {% if job.keywords %}
+                            {% for kw in job.keywords.split(',')[:4] %}
+                            <span style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;">{{ kw.strip() }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Arrow -->
+                    <div style="color:#cbd5e1;font-size:18px;flex-shrink:0;align-self:center;">&rsaquo;</div>
                 </div>
-                <div class="job-title">{{ job.title }}</div>
-                <div class="job-meta">{{ job.company }}</div>
-                {% if job.location %}
-                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">&#x1F4CD; {{ job.location }}</div>
-                {% endif %}
-                {% if job.salary_min or job.salary_max %}
-                <div style="font-size:12px;font-weight:700;color:var(--green);margin:4px 0;">
-                    RM
-                    {% if job.salary_min and job.salary_max %}
-                        {{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}
-                    {% elif job.salary_min %}
-                        {{ '{:,}'.format(job.salary_min) }}+
-                    {% else %}
-                        Up to {{ '{:,}'.format(job.salary_max) }}
-                    {% endif %}
-                    / month
-                </div>
-                {% endif %}
-                {% if job.keywords %}
-                <div class="job-tags">
-                    {% for kw in job.keywords.split(',')[:3] %}
-                    <span class="skill-tag">{{ kw.strip() }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
             </a>
             {% endfor %}
         </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
-            Recommendations are based on skills and experience in your saved resume.
-            <a href="{{ url_for('applicant_jobs') }}" style="color:var(--orange);">Browse all jobs &rarr;</a>
+        <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-muted);">
+            Recommendations based on your saved resume &nbsp;·&nbsp;
+            <a href="{{ url_for('applicant_jobs') }}" style="color:var(--orange);font-weight:600;">Browse all jobs &rarr;</a>
         </div>
 
         {% else %}
-        <!-- No resume uploaded yet: show latest positions -->
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Available Positions</div>
+        <!-- No saved resume: show latest positions -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">Available Positions</div>
+            <span style="font-size:12px;color:var(--text-muted);">Upload your resume to get personalised recommendations</span>
+        </div>
         {% if jobs %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
             {% for job in jobs %}
-            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" class="job-card">
-                <div class="job-card-header">
-                    <span style="background:#ffedd5;color:#c2410c;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;">{{ job.title[:2].upper() }}</span>
-                    <span class="status status-active" style="font-size:10px;">Active</span>
+            <a href="{{ url_for('applicant_apply', job_id=job.id) }}" style="display:block;background:white;border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;transition:all 0.18s;" onmouseover="this.style.borderColor='#ea580c';this.style.boxShadow='0 4px 16px rgba(234,88,12,0.10)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                    <div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#15803d;flex-shrink:0;">
+                        {{ job.title[:2].upper() }}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                            <div style="font-size:14px;font-weight:800;color:var(--navy);">{{ job.title }}</div>
+                            <span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">&#x2022; Hiring</span>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+                            {{ job.company }}{% if job.location %} &nbsp;&#x2022;&nbsp; &#x1F4CD; {{ job.location }}{% endif %}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            {% if job.salary_min or job.salary_max %}
+                            <span style="font-size:12px;font-weight:700;color:var(--green);">
+                                RM{% if job.salary_min and job.salary_max %}{{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}{% elif job.salary_min %}{{ '{:,}'.format(job.salary_min) }}+{% else %}Up to {{ '{:,}'.format(job.salary_max) }}{% endif %}/mo
+                            </span>
+                            {% endif %}
+                            {% if job.keywords %}
+                            {% for kw in job.keywords.split(',')[:4] %}
+                            <span style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;">{{ kw.strip() }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="color:#cbd5e1;font-size:18px;flex-shrink:0;align-self:center;">&rsaquo;</div>
                 </div>
-                <div class="job-title">{{ job.title }}</div>
-                <div class="job-meta">{{ job.company }}</div>
-                {% if job.location %}
-                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">&#x1F4CD; {{ job.location }}</div>
-                {% endif %}
-                {% if job.salary_min or job.salary_max %}
-                <div style="font-size:12px;font-weight:700;color:var(--green);margin:4px 0;">
-                    RM
-                    {% if job.salary_min and job.salary_max %}
-                        {{ '{:,}'.format(job.salary_min) }} – {{ '{:,}'.format(job.salary_max) }}
-                    {% elif job.salary_min %}
-                        {{ '{:,}'.format(job.salary_min) }}+
-                    {% else %}
-                        Up to {{ '{:,}'.format(job.salary_max) }}
-                    {% endif %}
-                    / month
-                </div>
-                {% endif %}
-                {% if job.keywords %}
-                <div class="job-tags">
-                    {% for kw in job.keywords.split(',')[:3] %}
-                    <span class="skill-tag">{{ kw.strip() }}</span>
-                    {% endfor %}
-                </div>
-                {% endif %}
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <div class="card">
-            <div class="card-body" style="text-align:center;padding:40px;color:var(--text-muted);">
-                No active job postings right now. Check back soon.
-            </div>
+        <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:48px;text-align:center;color:var(--text-muted);">
+            <div style="font-size:32px;margin-bottom:10px;">&#x1F4BC;</div>
+            No active job postings right now. Check back soon.
         </div>
         {% endif %}
         {% endif %}
     </div>
 
-    <div>
-        {% if not current_user.saved_resume_filename %}
-        <div class="card" style="margin-bottom:16px;border:1.5px solid #bfdbfe;background:#eff6ff;">
-            <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:14px 16px;">
-                <div style="font-size:28px;">&#x26A1;</div>
-                <div style="flex:1;">
-                    <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:2px;">Enable Quick Apply</div>
-                    <div style="font-size:12px;color:#3b82f6;line-height:1.5;">Upload your resume once to apply to any job in one click.</div>
+    <!-- RIGHT: Profile + Applications + Template -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Profile / Quick Apply status -->
+        {% if current_user.saved_resume_filename %}
+        <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:18px;">&#x26A1;</div>
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#15803d;">Quick Apply Ready</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Resume saved to your profile</div>
                 </div>
-                <a href="{{ url_for('applicant_settings') }}" class="btn btn-sm" style="background:#2563eb;color:white;white-space:nowrap;">&#x2B06; Upload</a>
+                <span style="margin-left:auto;background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;">&#x2713; Active</span>
             </div>
+            <div style="background:#f0fdf4;border-radius:7px;padding:8px 12px;font-size:12px;color:#166534;font-weight:600;display:flex;align-items:center;gap:6px;">
+                <span style="font-size:14px;">&#x1F4C4;</span>
+                {{ current_user.saved_resume_filename }}
+            </div>
+            <a href="{{ url_for('applicant_settings') }}" style="display:block;margin-top:10px;font-size:11px;color:var(--text-muted);text-align:center;">Manage resume &rarr;</a>
+        </div>
+        {% else %}
+        <div style="background:linear-gradient(135deg,#1e40af,#1d4ed8);border-radius:12px;padding:18px;">
+            <div style="font-size:14px;font-weight:800;color:white;margin-bottom:4px;">&#x26A1; Enable Quick Apply</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.75);line-height:1.5;margin-bottom:14px;">Upload your resume once — apply to any job in one click. Also unlocks personalised job recommendations.</div>
+            <a href="{{ url_for('applicant_settings') }}" style="display:block;background:white;color:#1d4ed8;font-size:12px;font-weight:700;text-align:center;padding:9px;border-radius:7px;">&#x2B06; Upload Resume</a>
         </div>
         {% endif %}
 
-        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);border:1.5px solid #fed7aa;">
-            <div class="card-body" style="display:flex;align-items:center;gap:14px;padding:16px;">
-                <div style="font-size:32px;">&#x1F4C4;</div>
-                <div style="flex:1;">
-                    <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:3px;">Resume Template</div>
-                    <div style="font-size:12px;color:#78350f;line-height:1.5;">Download our template to structure your resume for a higher match score.</div>
+        <!-- Resume template download -->
+        <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fed7aa;border-radius:12px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:#ffedd5;display:flex;align-items:center;justify-content:center;font-size:18px;">&#x1F4C4;</div>
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:#9a3412;">Resume Template</div>
+                    <div style="font-size:11px;color:#78350f;">Optimised for higher match scores</div>
                 </div>
-                <a href="{{ url_for('static', filename='downloads/resume_template.docx') }}" download class="btn btn-sm" style="background:#ea580c;color:white;white-space:nowrap;">&#x2B07; Download</a>
             </div>
+            <a href="{{ url_for('static', filename='downloads/resume_template.docx') }}" download style="display:block;background:#ea580c;color:white;font-size:12px;font-weight:700;text-align:center;padding:9px;border-radius:7px;">&#x2B07; Download .docx</a>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">My Applications</div>
-                <a href="{{ url_for('applicant_applications') }}" class="btn btn-outline btn-sm">View All</a>
+        <!-- My Applications -->
+        <div style="background:white;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+                <div style="font-size:14px;font-weight:800;color:var(--navy);">My Applications</div>
+                <a href="{{ url_for('applicant_applications') }}" style="font-size:12px;font-weight:600;color:var(--orange);">View all &rarr;</a>
             </div>
-            <div class="card-body" style="padding-top:8px;">
+            <div style="padding:12px 0;">
                 {% for app in applications %}
-                <div class="app-card" style="margin-bottom:10px;">
-                    <div class="app-card-tag" style="background:#ffedd5;color:#c2410c;">{{ app.job.title[:2].upper() }}</div>
-                    <div style="flex:1;">
-                        <div class="fw-700" style="font-size:13px;">{{ app.job.title }}</div>
-                        <div class="text-muted text-sm">{{ app.status | capitalize }} &middot; Score: {{ app.composite_score }}%</div>
+                <a href="{{ url_for('applicant_application_detail', app_id=app.id) }}" style="display:flex;align-items:center;gap:12px;padding:10px 18px;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <!-- Score circle -->
+                    <div style="width:42px;height:42px;border-radius:50%;border:3px solid {% if app.composite_score >= 80 %}#10b981{% elif app.composite_score >= 60 %}#f59e0b{% else %}#ef4444{% endif %};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <span style="font-size:10px;font-weight:800;color:{% if app.composite_score >= 80 %}#10b981{% elif app.composite_score >= 60 %}#f59e0b{% else %}#ef4444{% endif %};">{{ app.composite_score }}%</span>
                     </div>
-                </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ app.job.title }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ app.job.company }}</div>
+                    </div>
+                    <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;flex-shrink:0;
+                        {% if app.status == 'shortlisted' %}background:#dcfce7;color:#15803d;
+                        {% elif app.status == 'rejected' %}background:#fee2e2;color:#b91c1c;
+                        {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+                        {{ app.status | capitalize }}
+                    </span>
+                </a>
                 {% else %}
-                <div style="text-align:center;padding:20px;color:var(--text-muted);">
-                    No applications yet. <a href="{{ url_for('applicant_jobs') }}" style="color:var(--blue);">Apply now</a>.
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:28px;margin-bottom:8px;">&#x1F4CB;</div>
+                    <div style="font-size:13px;margin-bottom:10px;">No applications yet</div>
+                    <a href="{{ url_for('applicant_jobs') }}" style="font-size:12px;font-weight:700;color:var(--orange);">Find jobs to apply &rarr;</a>
                 </div>
                 {% endfor %}
             </div>
         </div>
+
     </div>
 </div>
 {% endblock %}
