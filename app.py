@@ -703,11 +703,20 @@ def applicant_dashboard():
     recommended = []
     rec_scores  = {}
 
-    if current_user.saved_resume_text:
+    resume_text = current_user.saved_resume_text
+    rec_source  = 'profile'
+    if not resume_text:
+        latest_app = Application.query.filter_by(user_id=current_user.id)\
+                        .order_by(Application.applied_at.desc()).first()
+        if latest_app and latest_app.resume_text:
+            resume_text = latest_app.resume_text
+            rec_source  = 'latest'
+
+    if resume_text:
         scored = []
         for job in all_jobs:
             job_text = f"{job.title} {job.keywords or ''} {job.description[:500]}"
-            score = semantic_score(current_user.saved_resume_text, job_text)
+            score = semantic_score(resume_text, job_text)
             scored.append((job, score))
         scored.sort(key=lambda x: x[1], reverse=True)
         top = [(job, s) for job, s in scored[:4] if s >= 25.0]
@@ -719,7 +728,7 @@ def applicant_dashboard():
 
     return render_template('applicant/dashboard.html', jobs=jobs,
                            recommended=recommended, rec_scores=rec_scores,
-                           applications=applications)
+                           applications=applications, rec_source=rec_source)
 
 @app.route('/applicant/jobs')
 @login_required
@@ -804,8 +813,25 @@ def applicant_apply(job_id):
         )
         db.session.add(application)
         db.session.commit()
+        if resume_choice == 'upload':
+            return redirect(url_for('applicant_save_resume_prompt', app_id=application.id))
         return redirect(url_for('applicant_applications'))
     return render_template('applicant/apply_job.html', job=job)
+
+@app.route('/applicant/applications/<int:app_id>/save-resume', methods=['GET', 'POST'])
+@login_required
+@applicant_required
+def applicant_save_resume_prompt(app_id):
+    appl = Application.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+    if request.method == 'POST':
+        if request.form.get('action') == 'save':
+            current_user.saved_resume_path     = appl.resume_path
+            current_user.saved_resume_filename = appl.resume_path.split('_', 2)[-1] if appl.resume_path else appl.resume_path
+            current_user.saved_resume_text     = appl.resume_text
+            db.session.commit()
+            flash('Resume saved to your profile. Quick Apply is now enabled!')
+        return redirect(url_for('applicant_applications'))
+    return render_template('applicant/save_resume_prompt.html', appl=appl)
 
 @app.route('/applicant/applications')
 @login_required

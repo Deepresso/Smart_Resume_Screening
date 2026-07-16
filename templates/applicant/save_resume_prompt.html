@@ -1,0 +1,72 @@
+{% extends "base_applicant.html" %}
+{% block title %}Application Submitted{% endblock %}
+{% block content %}
+<div style="max-width:520px;margin:60px auto;">
+
+    <!-- Success header -->
+    <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:72px;height:72px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;">&#x2705;</div>
+        <div style="font-size:22px;font-weight:900;color:var(--navy);margin-bottom:6px;">Application Submitted!</div>
+        <div style="font-size:14px;color:var(--text-muted);">You applied for <strong>{{ appl.job.title }}</strong> at {{ appl.job.company }}</div>
+    </div>
+
+    <!-- Score card -->
+    <div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:4px;">Your Match Score</div>
+                <div style="font-size:40px;font-weight:900;color:{% if appl.composite_score >= 80 %}var(--green){% elif appl.composite_score >= 60 %}var(--orange){% else %}var(--red){% endif %};">
+                    {{ appl.composite_score }}%
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:160px;">
+                {% for label, val, color in [('Keyword', appl.keyword_score, '#ea580c'), ('BERT Semantic', appl.semantic_score, '#0ea5e9'), ('Fuzzy', appl.fuzzy_score, '#7c3aed'), ('TF-IDF', appl.similarity_score, '#10b981')] %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="font-size:11px;color:var(--text-muted);width:90px;">{{ label }}</div>
+                    <div style="flex:1;background:#f1f5f9;border-radius:4px;height:6px;overflow:hidden;">
+                        <div style="height:100%;width:{{ val }}%;background:{{ color }};border-radius:4px;"></div>
+                    </div>
+                    <div style="font-size:11px;font-weight:700;color:var(--navy);width:32px;text-align:right;">{{ val }}%</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Save prompt card -->
+    <div style="background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:14px;padding:24px 28px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <div style="font-size:28px;">&#x26A1;</div>
+            <div>
+                <div style="font-size:15px;font-weight:800;color:white;">Save resume for Quick Apply?</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">Apply to future jobs instantly without re-uploading</div>
+            </div>
+        </div>
+
+        <!-- Filename pill -->
+        <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+            <span style="font-size:18px;">&#x1F4C4;</span>
+            <span style="font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;">{{ appl.resume_path.split('_', 2)[-1] if appl.resume_path else 'resume' }}</span>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <form method="POST" style="flex:1;">
+                <input type="hidden" name="action" value="save">
+                <button type="submit" style="width:100%;background:#10b981;color:white;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;">
+                    &#x2713; Save to Profile
+                </button>
+            </form>
+            <form method="POST" style="flex:1;">
+                <input type="hidden" name="action" value="skip">
+                <button type="submit" style="width:100%;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">
+                    Skip for now
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--text-muted);">
+        You can always manage your profile resume from <a href="{{ url_for('applicant_settings') }}" style="color:var(--orange);">Settings</a>.
+    </div>
+</div>
+{% endblock %}
